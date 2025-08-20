@@ -25,7 +25,11 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
       submittedBy: 'Demo User'
     };
 
-    setAssetRequests(prev => [...prev, newRequest]);
+    const updated = [...assetRequests, newRequest];
+    setAssetRequests(updated);
+    try {
+      localStorage.setItem('assetRequests', JSON.stringify(updated));
+    } catch {}
     
     // Reset form
     setAssetRequestForm({

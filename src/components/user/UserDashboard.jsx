@@ -7,7 +7,14 @@ import AssetHistory from './AssetHistory';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('assetInfo');
-  const [assetRequests, setAssetRequests] = useState([]);
+  const [assetRequests, setAssetRequests] = useState(() => {
+    try {
+      const stored = localStorage.getItem('assetRequests');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
   const [assetRequestForm, setAssetRequestForm] = useState({
     assetId: '',
     assetName: '',
@@ -17,6 +24,12 @@ const UserDashboard = () => {
     frequencyPlan: '',
     description: ''
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('assetRequests', JSON.stringify(assetRequests));
+    } catch {}
+  }, [assetRequests]);
 
   // Scroll to top when tab changes
   useEffect(() => {
