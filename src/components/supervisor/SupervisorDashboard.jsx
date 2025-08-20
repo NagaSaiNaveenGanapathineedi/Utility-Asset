@@ -132,6 +132,7 @@ const SupervisorDashboard = () => {
 		{ workId: 'WO004', planId: 'PLN-104', scheduledDate: '2025-07-31', status: 'Open', description: 'Troubleshoot printer in HR department', requestedBy: 'Grace Hall',maintenancePlan:"Quarterly", requestedById: 'USR-004', assignedTo: '', assignedToId: '' },
 		{ workId: 'WO005', planId: 'PLN-105', scheduledDate: '2025-08-02', status: 'Open', description: 'Replace broken monitor in Conference Room A', requestedBy: 'Helen Clark',maintenancePlan:"Yearly", requestedById: 'USR-005', assignedTo: '', assignedToId: '' }
 	]);
+	const [selectedTechnician, setSelectedTechnician] = useState(null);
 
 	useEffect(() => {
 		const t = setTimeout(() => {
@@ -166,7 +167,7 @@ const SupervisorDashboard = () => {
 		'view-plan': { icon: Eye, title: 'View Plans', lead: 'Review and monitor existing maintenance plans', body: { title: 'Plan Overview', text: 'View all maintenance plans, schedules, and upcoming activities.' } },
 		//'update-plan': { icon: Edit, title: 'Update Plans', lead: 'Modify existing maintenance plans and schedules', body: { title: 'Plan Modification', text: 'Update maintenance schedules, procedures, and plan details.' } },
 		// technician group uses functional view for assignments; keep search as simple card
-		'search-technician': { icon: Search, title: 'Search Technician', lead: 'Find technicians by skills, availability, and location', body: { title: 'Technician Directory', text: 'Search by name, skills, department, or availability status.' } }
+		// 'search-technician' is implemented as a functional tab below
 	};
 
 	const renderActiveTab = () => {
@@ -179,11 +180,20 @@ const SupervisorDashboard = () => {
 			case 'assign-work':
 				return <AssignWork workOrders={workOrders} setWorkOrders={setWorkOrders} />;
 			case 'view-assignments':
-				return <ViewAssignments workOrders={workOrders} />;
+				return <ViewAssignments workOrders={workOrders} selectedTechnician={selectedTechnician} onClearFilter={() => setSelectedTechnician(null)} />;
 			case 'asset-history':
 				return <AssetHistory workOrders={workOrders} />;
 			case 'technician-summary':
 				return <TechnicianSummary workOrders={workOrders} />;
+			case 'search-technician':
+				return (
+					<SearchTechnicians
+						onViewAssignments={(tech) => {
+							setSelectedTechnician(tech);
+							setActiveTab('view-assignments');
+						}}
+					/>
+				);
 			default:
 				return <AssetRegistration registeredAssets={registeredAssets} setRegisteredAssets={setRegisteredAssets} />;
 		}
@@ -394,13 +404,13 @@ const AssignWork = ({ workOrders, setWorkOrders }) => {
 							<th style={styles.th}>Action</th>
 						</tr>
 					</thead>
-											<tbody>
-							{workOrders.filter(wo => !wo.assignedTo).map((wo) => (
-								<tr key={wo.workId}>
-									<td style={styles.td}>{wo.workId}</td>
-									<td style={styles.td}>{wo.description}</td>
-									<td style={styles.td}>{wo.maintenancePlan}</td>
-									<td style={styles.td}>
+					<tbody>
+						{workOrders.filter(wo => !wo.assignedTo).map((wo) => (
+							<tr key={wo.workId}>
+								<td style={styles.td}>{wo.workId}</td>
+								<td style={styles.td}>{wo.description}</td>
+								<td style={styles.td}>{wo.priority}</td>
+								<td style={styles.td}>
 									<select value={pendingAssigneeByWorkId[wo.workId] || ''} onChange={(e) => handleAssigneeSelect(wo.workId, e.target.value)} style={{ ...styles.input, maxWidth: '260px' }}>
 										<option value="">Select technician</option>
 										{technicians.map(t => (<option key={t.technicianId} value={t.name}>{t.name} ({t.skill})</option>))}
@@ -411,20 +421,31 @@ const AssignWork = ({ workOrders, setWorkOrders }) => {
 									<button className="btn btn-primary" style={{ padding: '8px 14px', fontSize: '0.9rem' }} disabled={!pendingAssigneeByWorkId[wo.workId]} onClick={() => handleAssign(wo.workId)}>Assign</button>
 								</td>
 							</tr>
-							))}
-						</tbody>
+						))}
+					</tbody>
 				</table>
 			</div>
 		</motion.div>
 	);
 };
 
-const ViewAssignments = ({ workOrders }) => {
-	const assigned = workOrders.filter(w => w.assignedTo);
+const ViewAssignments = ({ workOrders, selectedTechnician, onClearFilter }) => {
+	let assigned = workOrders.filter(w => w.assignedTo);
+	if (selectedTechnician) {
+		assigned = assigned.filter(w => (w.assignedToId && w.assignedToId === selectedTechnician.technicianId) || (w.assignedTo && w.assignedTo === selectedTechnician.name));
+	}
 	return (
 		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
 			<h2 style={{ color: 'var(--color-text-dark)' }}>Technician Assignments</h2>
 			<p style={{ color: 'var(--color-text-medium)', fontSize: '1rem', marginBottom: '20px' }}>Current assignments and their status</p>
+			{selectedTechnician && (
+				<div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+					<div style={{ padding: '8px 12px', background: 'var(--color-body-bg)', borderRadius: '8px', border: '1px solid var(--color-border-light)', color: 'var(--color-text-dark)' }}>
+						<strong>Filtered by:</strong> {selectedTechnician.name} <span style={{ opacity: 0.6 }}>({selectedTechnician.technicianId})</span>
+					</div>
+					<button className="btn" style={{ padding: '8px 12px' }} onClick={onClearFilter}>Clear Filter</button>
+				</div>
+			)}
 			{assigned.length === 0 ? (
 				<div style={{ textAlign: 'center', padding: '30px', background: 'var(--color-body-bg)', border: '1px solid var(--color-border-light)', borderRadius: '8px', color: 'var(--color-text-medium)' }}>
 					No assignments yet. Assign tasks in the Assign Work tab.
@@ -518,6 +539,84 @@ const TechnicianSummary = ({ workOrders }) => {
 								<div><strong>Completed:</strong> {e.done}</div>
 							</div>
 						</div>
+					))}
+				</div>
+			)}
+		</motion.div>
+	);
+};
+
+// Technician Search (similar to SearchAssets)
+const SearchTechnicians = ({ onViewAssignments }) => {
+	const [searchTerm, setSearchTerm] = useState('');
+	const [filtered, setFiltered] = useState(technicians);
+	useEffect(() => {
+		let list = [...technicians];
+		if (searchTerm) list = list.filter(t => [t.technicianId, t.name, t.skill, t.region].some(v => String(v).toLowerCase().includes(searchTerm.toLowerCase())));
+		setFiltered(list);
+	}, [searchTerm]);
+	return (
+		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
+			<h2 style={{ color: 'var(--color-text-dark)' }}>Search Technicians</h2>
+			<p style={{ color: 'var(--color-text-medium)', fontSize: '1rem', marginBottom: '30px' }}>Find technicians and view their assignments</p>
+			<div style={{ display: 'flex', gap: '15px', marginBottom: '20px', flexWrap: 'wrap', backgroundColor: 'var(--color-body-bg)', border: '1px solid var(--color-border-light)', borderRadius: '10px', padding: '16px' }}>
+				<input type="text" placeholder="Search by ID, name, skill, region..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={styles.input} />
+			</div>
+			<div style={{ marginBottom: '20px', padding: '16px', backgroundColor: 'var(--color-body-bg)', borderRadius: '8px', border: '1px solid var(--color-border-light)' }}>
+				<p style={{ margin: 0, color: 'var(--color-text-medium)', fontSize: '0.9rem' }}>
+					{searchTerm ? (
+						<>
+							<strong style={{ color: 'var(--color-text-dark)' }}>{filtered.length}</strong> technician{filtered.length !== 1 ? 's' : ''} found matching "<strong>{searchTerm}</strong>"
+						</>
+					) : (
+						<>
+							<strong style={{ color: 'var(--color-text-dark)' }}>{technicians.length}</strong> total technicians available
+						</>
+					)}
+				</p>
+			</div>
+			{filtered.length === 0 ? (
+				<div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-medium)', backgroundColor: 'var(--color-body-bg)', borderRadius: '8px' }}>
+					<Search size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
+					<h3 style={{ color: 'var(--color-text-dark)', marginBottom: '8px' }}>No Technicians Found</h3>
+					<p>Try adjusting your search query.</p>
+				</div>
+			) : (
+				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px' }}>
+					{filtered.map(t => (
+						<motion.div
+							key={t.technicianId}
+							initial={{ opacity: 0, y: 10, scale: 0.95 }}
+							animate={{ opacity: 1, y: 0, scale: 1 }}
+							transition={{ duration: 0.25 }}
+							style={{ background: 'var(--color-white)', border: '1px solid var(--color-border-light)', borderRadius: '12px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
+						>
+							<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+								<div>
+									<h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-dark)' }}>{t.name}</h3>
+									<div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+										<span style={{ padding: '4px 8px', border: '1px solid var(--color-border-light)', borderRadius: '999px', fontSize: '12px', color: 'var(--color-text-medium)', background: 'var(--color-body-bg)' }}>ID: {t.technicianId}</span>
+										<span style={{ padding: '4px 8px', border: '1px solid var(--color-border-light)', borderRadius: '999px', fontSize: '12px', color: 'var(--color-text-medium)', background: 'var(--color-body-bg)' }}>{t.skill}</span>
+									</div>
+								</div>
+								<span style={{ padding: '6px 10px', background: 'var(--color-body-bg)', color: 'var(--color-text-medium)', borderRadius: '999px', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.3px' }}>{t.region}</span>
+							</div>
+							<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px 16px', marginBottom: '12px' }}>
+								{[
+									{ label: 'Technician ID', value: t.technicianId },
+									{ label: 'Skill', value: t.skill },
+									{ label: 'Region', value: t.region }
+								].map(({ label, value }) => (
+									<div key={label} style={{ minWidth: 0 }}>
+										<div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px' }}>{label}</div>
+										<div style={{ fontSize: '14px', color: 'var(--color-text-dark)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</div>
+									</div>
+								))}
+							</div>
+							<div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+								<motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn btn-primary" style={{ flex: 1, padding: '10px 16px', fontSize: '0.9rem' }} onClick={() => onViewAssignments(t)}>View Assignments</motion.button>
+							</div>
+						</motion.div>
 					))}
 				</div>
 			)}
