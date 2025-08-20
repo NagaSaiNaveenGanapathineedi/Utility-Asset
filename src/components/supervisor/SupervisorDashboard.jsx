@@ -158,7 +158,7 @@ const SupervisorDashboard = () => {
 		{ key: 'assets', label: 'Assets', icon: Database, items: [ { id: 'asset-registration', label: 'Asset Registration', icon: Plus }, { id: 'search-assets', label: 'Search Assets', icon: Search } ] },
 		{ key: 'maintenance', label: 'Maintenance Plan', icon: Calendar, items: [ { id: 'plan-creation', label: 'Plan Creation', icon: Plus }, { id: 'view-plan', label: 'View Plan', icon: FileText }, { id: 'update-plan', label: 'Update Plan', icon: Edit } ] },
 		{ key: 'workOrder', label: 'Work Order', icon: Clipboard, items: [ { id: 'assign-work', label: 'Assign Work', icon: UserCheck } ] },
-		{ key: 'technician', label: 'Technician', icon: Users, items: [ { id: 'search-technician', label: 'Search Technician', icon: Search }, { id: 'view-assignments', label: 'View Assignments', icon: FileText } ] },
+		{ key: 'technician', label: 'Assigned Technician', icon: Users, items: [ { id: 'search-technician', label: 'Search Technician', icon: Search }, { id: 'view-assignments', label: 'View Assignments', icon: FileText } ] },
 		{ key: 'reports', label: 'Reports', icon: BarChart3, items: [ { id: 'asset-history', label: 'Asset History', icon: FileText }, { id: 'technician-summary', label: 'Technician Summary', icon: TrendingUp } ] }
 	];
 
