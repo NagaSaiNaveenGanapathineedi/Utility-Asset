@@ -126,11 +126,11 @@ const SupervisorDashboard = () => {
 	const [expandedMenus, setExpandedMenus] = useState({ assets: true, maintenance: false, workOrder: false, technician: false, reports: false });
 	// Shared work orders across tabs
 	const [workOrders, setWorkOrders] = useState([
-		{ workId: 'WO001', planId: 'PLN-101', scheduledDate: '2025-07-30', status: 'Open', description: 'Fix faulty AC unit in Server Room', priority: 'High', requestedBy: 'Bob Smith', requestedById: 'USR-001', assignedTo: '', assignedToId: '' },
-		{ workId: 'WO002', planId: 'PLN-102', scheduledDate: '2025-08-05', status: 'Open', description: 'Install new network switch in Office 302', priority: 'Medium', requestedBy: 'David Lee', requestedById: 'USR-002', assignedTo: '', assignedToId: '' },
-		{ workId: 'WO003', planId: 'PLN-103', scheduledDate: '2025-07-25', status: 'Open', description: 'Routine maintenance of HVAC system', priority: 'Low', requestedBy: 'Eve White', requestedById: 'USR-003', assignedTo: '', assignedToId: '' },
-		{ workId: 'WO004', planId: 'PLN-104', scheduledDate: '2025-07-31', status: 'Open', description: 'Troubleshoot printer in HR department', priority: 'High', requestedBy: 'Grace Hall', requestedById: 'USR-004', assignedTo: '', assignedToId: '' },
-		{ workId: 'WO005', planId: 'PLN-105', scheduledDate: '2025-08-02', status: 'Open', description: 'Replace broken monitor in Conference Room A', priority: 'Medium', requestedBy: 'Helen Clark', requestedById: 'USR-005', assignedTo: '', assignedToId: '' }
+		{ workId: 'WO001', planId: 'PLN-101', scheduledDate: '2025-07-30', status: 'Open', description: 'Fix faulty AC unit in Server Room', requestedBy: 'Bob Smith',maintenancePlan:"Monthly", requestedById: 'USR-001', assignedTo: '', assignedToId: '' },
+		{ workId: 'WO002', planId: 'PLN-102', scheduledDate: '2025-08-05', status: 'Open', description: 'Install new network switch in Office 302', requestedBy: 'David Lee',maintenancePlan:"Weekly", requestedById: 'USR-002', assignedTo: '', assignedToId: '' },
+		{ workId: 'WO003', planId: 'PLN-103', scheduledDate: '2025-07-25', status: 'Open', description: 'Routine maintenance of HVAC system',  requestedBy: 'Eve White',maintenancePlan:"Monthly", requestedById: 'USR-003', assignedTo: '', assignedToId: '' },
+		{ workId: 'WO004', planId: 'PLN-104', scheduledDate: '2025-07-31', status: 'Open', description: 'Troubleshoot printer in HR department', requestedBy: 'Grace Hall',maintenancePlan:"Quarterly", requestedById: 'USR-004', assignedTo: '', assignedToId: '' },
+		{ workId: 'WO005', planId: 'PLN-105', scheduledDate: '2025-08-02', status: 'Open', description: 'Replace broken monitor in Conference Room A', requestedBy: 'Helen Clark',maintenancePlan:"Yearly", requestedById: 'USR-005', assignedTo: '', assignedToId: '' }
 	]);
 	const [selectedTechnician, setSelectedTechnician] = useState(null);
 
@@ -156,16 +156,16 @@ const SupervisorDashboard = () => {
 
 	const menuItems = [
 		{ key: 'assets', label: 'Assets', icon: Database, items: [ { id: 'asset-registration', label: 'Asset Registration', icon: Plus }, { id: 'search-assets', label: 'Search Assets', icon: Search } ] },
-		{ key: 'maintenance', label: 'Maintenance Plan', icon: Calendar, items: [ { id: 'plan-creation', label: 'Plan Creation', icon: Plus }, { id: 'view-plan', label: 'View Plan', icon: FileText }, { id: 'update-plan', label: 'Update Plan', icon: Edit } ] },
+		{ key: 'maintenance', label: 'Maintenance Plan', icon: Calendar, items: [ /*{ id: 'plan-creation', label: 'Plan Creation', icon: Plus },*/ { id: 'view-plan', label: 'View Plan', icon: FileText }/*, { id: 'update-plan', label: 'Update Plan', icon: Edit } */] },
 		{ key: 'workOrder', label: 'Work Order', icon: Clipboard, items: [ { id: 'assign-work', label: 'Assign Work', icon: UserCheck } ] },
 		{ key: 'technician', label: 'Assigned Technician', icon: Users, items: [ { id: 'search-technician', label: 'Search Technician', icon: Search }, { id: 'view-assignments', label: 'View Assignments', icon: FileText } ] },
 		{ key: 'reports', label: 'Reports', icon: BarChart3, items: [ { id: 'asset-history', label: 'Asset History', icon: FileText }, { id: 'technician-summary', label: 'Technician Summary', icon: TrendingUp } ] }
 	];
 
 	const simpleTabConfig = {
-		'plan-creation': { icon: Plus, title: 'Plan Creation', lead: 'Create comprehensive maintenance plans for assets', body: { title: 'Maintenance Planning', text: 'Create detailed maintenance schedules and procedures for your assets.' } },
+		//'plan-creation': { icon: Plus, title: 'Plan Creation', lead: 'Create comprehensive maintenance plans for assets', body: { title: 'Maintenance Planning', text: 'Create detailed maintenance schedules and procedures for your assets.' } },
 		'view-plan': { icon: Eye, title: 'View Plans', lead: 'Review and monitor existing maintenance plans', body: { title: 'Plan Overview', text: 'View all maintenance plans, schedules, and upcoming activities.' } },
-		'update-plan': { icon: Edit, title: 'Update Plans', lead: 'Modify existing maintenance plans and schedules', body: { title: 'Plan Modification', text: 'Update maintenance schedules, procedures, and plan details.' } },
+		//'update-plan': { icon: Edit, title: 'Update Plans', lead: 'Modify existing maintenance plans and schedules', body: { title: 'Plan Modification', text: 'Update maintenance schedules, procedures, and plan details.' } },
 		// technician group uses functional view for assignments; keep search as simple card
 		// 'search-technician' is implemented as a functional tab below
 	};
@@ -398,7 +398,7 @@ const AssignWork = ({ workOrders, setWorkOrders }) => {
 						<tr>
 							<th style={styles.th}>ID</th>
 							<th style={styles.th}>Description</th>
-							<th style={styles.th}>Priority</th>
+							<th style={styles.th}>Frequency</th>
 							<th style={styles.th}>Assign Technician</th>
 							<th style={styles.th}>Requested By</th>
 							<th style={styles.th}>Action</th>
