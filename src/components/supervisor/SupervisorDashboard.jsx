@@ -409,7 +409,7 @@ const AssignWork = ({ workOrders, setWorkOrders }) => {
 							<tr key={wo.workId}>
 								<td style={styles.td}>{wo.workId}</td>
 								<td style={styles.td}>{wo.description}</td>
-								<td style={styles.td}>{wo.priority}</td>
+								<td style={styles.td}>{wo.maintenancePlan}</td>
 								<td style={styles.td}>
 									<select value={pendingAssigneeByWorkId[wo.workId] || ''} onChange={(e) => handleAssigneeSelect(wo.workId, e.target.value)} style={{ ...styles.input, maxWidth: '260px' }}>
 										<option value="">Select technician</option>
