@@ -437,49 +437,6 @@ const TechnicianHeader = () => {
             </div>
           </div>
 
-          {/* Account Status */}
-          <div style={{
-            padding: '20px',
-            background: 'rgba(34, 197, 94, 0.1)',
-            borderRadius: '12px',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            textAlign: 'center'
-          }}>
-            <h4 style={{
-              margin: '0 0 8px 0',
-              color: 'white',
-              fontSize: '1.1rem',
-              fontWeight: '600'
-            }}>
-              Employment Status
-            </h4>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              background: 'rgba(34, 197, 94, 0.2)',
-              borderRadius: '20px',
-              color: 'rgb(34, 197, 94)',
-              fontWeight: '500',
-              fontSize: '0.9rem'
-            }}>
-              <div style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: 'rgb(34, 197, 94)'
-              }}></div>
-              Active Field Technician
-            </div>
-            <p style={{
-              margin: '12px 0 0 0',
-              color: 'rgba(255, 255, 255, 0.7)',
-              fontSize: '0.8rem'
-            }}>
-              Last login: {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
-            </p>
-          </div>
         </div>
       </Modal>
     </header>

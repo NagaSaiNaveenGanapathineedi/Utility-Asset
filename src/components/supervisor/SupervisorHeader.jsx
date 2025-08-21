@@ -396,53 +396,9 @@ const SupervisorHeader = () => {
               </div>
             </div>
           </div>
-
-          {/* Account Status */}
-          <div style={{
-            padding: '20px',
-            background: 'rgba(224, 157, 0, 0.1)',
-            borderRadius: '12px',
-            border: '1px solid rgba(224, 157, 0, 0.3)',
-            textAlign: 'center'
-          }}>
-            <h4 style={{
-              margin: '0 0 8px 0',
-              color: 'white',
-              fontSize: '1.1rem',
-              fontWeight: '600'
-            }}>
-              Account Status
-            </h4>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              background: 'rgba(224, 157, 0, 0.2)',
-              borderRadius: '20px',
-              color: 'var(--status-in-progress-text)',
-              fontWeight: '500',
-              fontSize: '0.9rem'
-            }}>
-              <div style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: 'var(--status-in-progress-text)'
-              }}></div>
-              Active - Supervisor Level
-            </div>
-            <p style={{
-              margin: '12px 0 0 0',
-              color: 'rgba(255, 255, 255, 0.7)',
-              fontSize: '0.8rem'
-            }}>
-              Last login: {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
-            </p>
-          </div>
-        </div>
-      </Modal>
-    </header>
+		</div>
+	</Modal>
+</header>
   );
 };
 
