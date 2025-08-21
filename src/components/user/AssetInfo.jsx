@@ -68,17 +68,6 @@ const AssetInfo = () => {
     }
   ];
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Available':
-        return { bg: 'var(--status-completed-bg)', text: 'var(--status-completed-text)' };
-      case 'Not Available':
-        return { bg: 'var(--status-open-bg)', text: 'var(--status-open-text)' };
-      default:
-        return { bg: 'var(--color-border-light)', text: 'var(--color-text-medium)' };
-    }
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -101,7 +90,6 @@ const AssetInfo = () => {
         gap: '20px' 
       }}>
         {getAllAvailableAssets().map((asset) => {
-          const statusColor = getStatusColor(asset.status);
           return (
             <div
               key={asset.id}
@@ -132,18 +120,6 @@ const AssetInfo = () => {
                 }}>
                   {asset.name}
                 </h3>
-                <span style={{
-                  padding: '4px 8px',
-                  background: statusColor.bg,
-                  color: statusColor.text,
-                  borderRadius: '4px',
-                  fontSize: '11px',
-                  fontWeight: '500',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.3px'
-                }}>
-                  {asset.status}
-                </span>
               </div>
               
               {[
