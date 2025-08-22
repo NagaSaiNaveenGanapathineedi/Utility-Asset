@@ -1,6 +1,11 @@
 import { motion } from 'framer-motion';
+import { useState, useMemo, useRef } from 'react';
+import { assetsData } from '../../data/assets';
 
 const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, setAssetRequestForm }) => {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestionsRef = useRef(null);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setAssetRequestForm(prev => ({
@@ -9,11 +14,29 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
     }));
   };
 
+  const handleSelectAsset = (asset) => {
+    setAssetRequestForm(prev => ({
+      ...prev,
+      assetId: asset.assetId,
+      assetName: asset.assetName,
+      location: asset.location,
+      region: asset.region,
+      siteCode: asset.siteCode
+    }));
+    setShowSuggestions(false);
+  };
+
+  const filteredSuggestions = useMemo(() => {
+    const query = (assetRequestForm.assetName || '').trim().toLowerCase();
+    if (!query) return [];
+    return assetsData.filter(a => a.assetName.toLowerCase().includes(query)).slice(0, 8);
+  }, [assetRequestForm.assetName]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!assetRequestForm.assetId || !assetRequestForm.assetName || !assetRequestForm.location || !assetRequestForm.region || !assetRequestForm.siteCode || !assetRequestForm.frequencyPlan) {
-      alert('Please fill in all required fields');
+      alert('Please select an asset from suggestions and fill required fields');
       return;
     }
 
@@ -30,8 +53,7 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
     try {
       localStorage.setItem('assetRequests', JSON.stringify(updated));
     } catch {}
-    
-    // Reset form
+
     setAssetRequestForm({
       assetId: '',
       assetName: '',
@@ -90,7 +112,69 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
           gap: '20px',
           marginBottom: '20px'
         }}>
-          {/* Asset ID */}
+          {/* Asset Name (Autocomplete) */}
+          <div style={{ position: 'relative' }}>
+            <label style={labelStyle}>
+              Asset Name *
+            </label>
+            <input
+              type="text"
+              name="assetName"
+              value={assetRequestForm.assetName}
+              onChange={(e) => { handleInputChange(e); setShowSuggestions(true); }}
+              placeholder="Type to search and select asset name"
+              style={inputStyle}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={(e) => {
+                // Delay to allow click on suggestion
+                requestAnimationFrame(() => setShowSuggestions(false));
+              }}
+              required
+            />
+            {showSuggestions && filteredSuggestions.length > 0 && (
+              <div
+                ref={suggestionsRef}
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  background: 'var(--color-white)',
+                  border: '1px solid var(--color-border-light)',
+                  borderRadius: '8px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                  marginTop: '6px',
+                  zIndex: 20,
+                  maxHeight: '220px',
+                  overflowY: 'auto'
+                }}
+              >
+                {filteredSuggestions.map((a) => (
+                  <button
+                    key={a.assetId}
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); handleSelectAsset(a); }}
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      background: 'transparent',
+                      border: 'none',
+                      padding: '10px 12px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px'
+                    }}
+                  >
+                    <span style={{ color: 'var(--color-text-dark)', fontWeight: 600 }}>{a.assetName}</span>
+                    <span style={{ color: 'var(--color-text-medium)', fontSize: '12px' }}>{a.assetId} • {a.location}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Asset ID (autofilled, read-only) */}
           <div>
             <label style={labelStyle}>
               Asset ID *
@@ -100,40 +184,9 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
               name="assetId"
               value={assetRequestForm.assetId}
               onChange={handleInputChange}
-              placeholder="Enter asset ID"
-              style={inputStyle}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'var(--color-light-primary)';
-                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'var(--color-border-medium)';
-                e.target.style.boxShadow = 'none';
-              }}
-              required
-            />
-          </div>
-
-          {/* Asset Name */}
-          <div>
-            <label style={labelStyle}>
-              Asset Name *
-            </label>
-            <input
-              type="text"
-              name="assetName"
-              value={assetRequestForm.assetName}
-              onChange={handleInputChange}
-              placeholder="Enter asset name"
-              style={inputStyle}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'var(--color-light-primary)';
-                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'var(--color-border-medium)';
-                e.target.style.boxShadow = 'none';
-              }}
+              placeholder="Auto-filled after selecting asset"
+              style={{ ...inputStyle, backgroundColor: 'var(--color-body-bg)' }}
+              readOnly
               required
             />
           </div>
@@ -148,16 +201,8 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
               name="location"
               value={assetRequestForm.location}
               onChange={handleInputChange}
-              placeholder="Enter location"
+              placeholder="Auto-filled after selecting asset"
               style={inputStyle}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'var(--color-light-primary)';
-                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'var(--color-border-medium)';
-                e.target.style.boxShadow = 'none';
-              }}
               required
             />
           </div>
@@ -172,16 +217,8 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
               name="region"
               value={assetRequestForm.region}
               onChange={handleInputChange}
-              placeholder="Enter region"
+              placeholder="Auto-filled after selecting asset"
               style={inputStyle}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'var(--color-light-primary)';
-                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'var(--color-border-medium)';
-                e.target.style.boxShadow = 'none';
-              }}
               required
             />
           </div>
@@ -196,16 +233,8 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
               name="siteCode"
               value={assetRequestForm.siteCode}
               onChange={handleInputChange}
-              placeholder="Enter site code"
+              placeholder="Auto-filled after selecting asset"
               style={inputStyle}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'var(--color-light-primary)';
-                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'var(--color-border-medium)';
-                e.target.style.boxShadow = 'none';
-              }}
               required
             />
           </div>
@@ -220,14 +249,6 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
               value={assetRequestForm.frequencyPlan}
               onChange={handleInputChange}
               style={inputStyle}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'var(--color-light-primary)';
-                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'var(--color-border-medium)';
-                e.target.style.boxShadow = 'none';
-              }}
               required
             >
               <option value="">Select frequency</option>
@@ -252,14 +273,6 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
               ...inputStyle,
               minHeight: '100px',
               resize: 'vertical'
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = 'var(--color-light-primary)';
-              e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = 'var(--color-border-medium)';
-              e.target.style.boxShadow = 'none';
             }}
             rows="4"
           />

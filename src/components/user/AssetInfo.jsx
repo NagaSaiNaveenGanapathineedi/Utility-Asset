@@ -1,73 +1,7 @@
 import { motion } from 'framer-motion';
+import { assetsData } from '../../data/assets';
 
 const AssetInfo = () => {
-  const getAllAvailableAssets = () => [
-    {
-      id: 'AST-001',
-      name: 'Main Distribution Panel',
-      location: 'Building A - Ground Floor',
-      status: 'Available',
-      lastMaintenance: '2024-01-15',
-      nextMaintenance: '2024-04-15'
-    },
-    {
-      id: 'AST-002', 
-      name: 'HVAC System Unit 1',
-      location: 'Building B - Rooftop',
-      status: 'Available',
-      lastMaintenance: '2024-01-10',
-      nextMaintenance: '2024-04-10'
-    },
-    {
-      id: 'AST-003',
-      name: 'Emergency Generator',
-      location: 'Building C - Basement',
-      status: 'Not Available',
-      lastMaintenance: '2024-01-20',
-      nextMaintenance: '2024-04-20'
-    },
-    {
-      id: 'AST-004',
-      name: 'Water Pump System',
-      location: 'Building D - Utility Room',
-      status: 'Available',
-      lastMaintenance: '2023-12-15',
-      nextMaintenance: '2024-03-15'
-    },
-    {
-      id: 'AST-005',
-      name: 'Fire Safety System',
-      location: 'Building A - All Floors',
-      status: 'Available',
-      lastMaintenance: '2023-12-20',
-      nextMaintenance: '2024-03-20'
-    },
-    {
-      id: 'AST-006',
-      name: 'Transformer Unit T-101',
-      location: 'Substation A - East Wing',
-      status: 'Available',
-      lastMaintenance: '2024-01-25',
-      nextMaintenance: '2024-04-25'
-    },
-    {
-      id: 'AST-007',
-      name: 'Cooling Tower System',
-      location: 'Building B - North Side',
-      status: 'Not Available',
-      lastMaintenance: '2024-02-01',
-      nextMaintenance: '2024-05-01'
-    },
-    {
-      id: 'AST-008',
-      name: 'Backup Power Unit',
-      location: 'Building C - Level B2',
-      status: 'Available',
-      lastMaintenance: '2024-01-12',
-      nextMaintenance: '2024-04-12'
-    }
-  ];
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -89,10 +23,10 @@ const AssetInfo = () => {
         gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
         gap: '20px' 
       }}>
-        {getAllAvailableAssets().map((asset) => {
+        {assetsData.map((asset) => {
           return (
             <div
-              key={asset.id}
+              key={asset.assetId}
               style={{
                 background: 'var(--color-white)',
                 border: '1px solid var(--color-border-light)',
@@ -118,15 +52,15 @@ const AssetInfo = () => {
                   fontWeight: '600',
                   color: 'var(--color-text-dark)'
                 }}>
-                  {asset.name}
+                  {asset.assetName}
                 </h3>
               </div>
               
               {[
-                { label: 'Asset ID', value: asset.id },
+                { label: 'Asset ID', value: asset.assetId },
                 { label: 'Location', value: asset.location },
-                { label: 'Last Maintenance', value: asset.lastMaintenance },
-                { label: 'Next Maintenance', value: asset.nextMaintenance }
+                { label: 'Region', value: asset.region },
+                { label: 'Site Code', value: asset.siteCode }
               ].map(({ label, value }) => (
                 <div key={label} style={{ marginBottom: '8px', width: '100%' }}>
                   <span style={{ 
@@ -136,15 +70,14 @@ const AssetInfo = () => {
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px',
                     display: 'block',
-                    marginBottom: '2px'
+                    margin: '0 0 2px 0'
                   }}>
                     {label}
                   </span>
                   <span style={{ 
                     fontSize: '14px',
                     fontWeight: '400',
-                    color: 'var(--color-text-dark)',
-                    lineHeight: '1.4'
+                    color: 'var(--color-text-dark)'
                   }}>
                     {value}
                   </span>

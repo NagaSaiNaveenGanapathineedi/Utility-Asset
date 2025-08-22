@@ -1,11 +1,7 @@
 import { motion } from 'framer-motion';
-import { useState } from 'react';
-import { FileText, Edit, Trash2, Save, X } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
-const AssetHistory = ({ assetRequests, setAssetRequests }) => {
-  const [editingRequest, setEditingRequest] = useState(null);
-  const [editForm, setEditForm] = useState({});
-
+const AssetHistory = ({ assetRequests }) => {
   const getUserPastAssetRecords = () => [
     {
       id: 'AST-004',
@@ -29,58 +25,17 @@ const AssetHistory = ({ assetRequests, setAssetRequests }) => {
       id: 'AST-007',
       name: 'Cooling Tower System',
       location: 'Building B - North Side',
-      status: 'Returned',
+      status: 'In Progress',
       requestedDate: '2023-10-10',
       completedDate: '2024-01-15',
       assignedTo: 'Demo User'
     }
   ];
 
-  const handleEditRequest = (request) => {
-    setEditingRequest(request.id);
-    setEditForm({
-      assetId: request.assetId,
-      assetName: request.assetName,
-      location: request.location,
-      region: request.region,
-      siteCode: request.siteCode,
-      frequencyPlan: request.frequencyPlan,
-      description: request.description
-    });
-  };
-
-  const handleSaveEdit = () => {
-    setAssetRequests(prev => 
-      prev.map(request => 
-        request.id === editingRequest 
-          ? { ...request, ...editForm }
-          : request
-      )
-    );
-    setEditingRequest(null);
-    setEditForm({});
-    alert('Asset request updated successfully!');
-  };
-
-  const handleCancelEdit = () => {
-    setEditingRequest(null);
-    setEditForm({});
-  };
-
-  const handleDeleteRequest = (requestId) => {
-    if (window.confirm('Are you sure you want to delete this asset request?')) {
-      setAssetRequests(prev => prev.filter(request => request.id !== requestId));
-      alert('Asset request deleted successfully!');
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const filteredRequests = (assetRequests || []).filter(r => {
+    const name = (r.assetName || '').trim();
+    return name !== 'SOFSOUDIF' && name !== 'DSADFDSA';
+  });
 
   return (
     <motion.div
@@ -108,7 +63,7 @@ const AssetHistory = ({ assetRequests, setAssetRequests }) => {
         }}>
           Your Asset Requests
         </h3>
-        {assetRequests.length === 0 ? (
+        {filteredRequests.length === 0 ? (
           <div style={{ 
             textAlign: 'center',
             padding: '40px',
@@ -128,7 +83,7 @@ const AssetHistory = ({ assetRequests, setAssetRequests }) => {
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '15px' }}>
-            {assetRequests.map((request) => (
+            {filteredRequests.map((request) => (
               <div key={request.id} style={{
                 background: 'var(--color-white)',
                 border: '1px solid var(--color-border-light)',
@@ -145,24 +100,7 @@ const AssetHistory = ({ assetRequests, setAssetRequests }) => {
                       fontWeight: '600',
                       color: 'var(--color-text-dark)'
                     }}>
-                      {editingRequest === request.id ? (
-                        <input
-                          name="assetName"
-                          value={editForm.assetName}
-                          onChange={handleInputChange}
-                          style={{
-                            fontSize: '1.1rem',
-                            fontWeight: '600',
-                            color: 'var(--color-text-dark)',
-                            border: '1px solid var(--color-border-medium)',
-                            borderRadius: '4px',
-                            padding: '4px 8px',
-                            background: 'var(--color-white)'
-                          }}
-                        />
-                      ) : (
-                        request.assetName
-                      )}
+                      {request.assetName}
                     </h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{
@@ -176,81 +114,6 @@ const AssetHistory = ({ assetRequests, setAssetRequests }) => {
                       }}>
                         {request.status}
                       </span>
-                      {editingRequest === request.id ? (
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <button
-                            onClick={handleSaveEdit}
-                            style={{
-                              padding: '4px',
-                              background: 'var(--status-completed-bg)',
-                              color: 'var(--status-completed-text)',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                            title="Save changes"
-                          >
-                            <Save size={14} />
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            style={{
-                              padding: '4px',
-                              background: 'var(--color-border-light)',
-                              color: 'var(--color-text-medium)',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                            title="Cancel editing"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <button
-                            onClick={() => handleEditRequest(request)}
-                            style={{
-                              padding: '4px',
-                              background: 'var(--status-in-progress-bg)',
-                              color: 'var(--status-in-progress-text)',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                            title="Edit request"
-                          >
-                            <Edit size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteRequest(request.id)}
-                            style={{
-                              padding: '4px',
-                              background: 'var(--status-open-bg)',
-                              color: 'var(--status-open-text)',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                            title="Delete request"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
                   
@@ -260,14 +123,14 @@ const AssetHistory = ({ assetRequests, setAssetRequests }) => {
                     gap: '12px' 
                   }}>
                     {[
-                      { label: 'Asset ID', value: request.assetId, name: 'assetId' },
-                      { label: 'Location', value: request.location, name: 'location' },
-                      { label: 'Region', value: request.region, name: 'region' },
-                      { label: 'Site Code', value: request.siteCode, name: 'siteCode' },
-                      { label: 'Frequency Plan', value: request.frequencyPlan, name: 'frequencyPlan' },
-                      { label: 'Submitted', value: request.submittedAt, name: 'submittedAt', readonly: true },
-                      { label: 'Submitted By', value: request.submittedBy, name: 'submittedBy', readonly: true }
-                    ].map(({ label, value, name, readonly }) => (
+                      { label: 'Asset ID', value: request.assetId },
+                      { label: 'Location', value: request.location },
+                      { label: 'Region', value: request.region },
+                      { label: 'Site Code', value: request.siteCode },
+                      { label: 'Frequency Plan', value: request.frequencyPlan },
+                      { label: 'Submitted', value: request.submittedAt },
+                      { label: 'Submitted By', value: request.submittedBy }
+                    ].map(({ label, value }) => (
                       <div key={label}>
                         <span style={{ 
                           fontSize: '11px',
@@ -280,53 +143,13 @@ const AssetHistory = ({ assetRequests, setAssetRequests }) => {
                         }}>
                           {label}
                         </span>
-                        {editingRequest === request.id && !readonly ? (
-                          name === 'frequencyPlan' ? (
-                            <select
-                              name={name}
-                              value={editForm[name]}
-                              onChange={handleInputChange}
-                              style={{
-                                fontSize: '14px',
-                                fontWeight: '400',
-                                color: 'var(--color-text-dark)',
-                                border: '1px solid var(--color-border-medium)',
-                                borderRadius: '4px',
-                                padding: '2px 6px',
-                                background: 'var(--color-white)',
-                                width: '100%'
-                              }}
-                            >
-                              <option value="Monthly">Monthly</option>
-                              <option value="Quarterly">Quarterly</option>
-                              <option value="Yearly">Yearly</option>
-                            </select>
-                          ) : (
-                            <input
-                              name={name}
-                              value={editForm[name]}
-                              onChange={handleInputChange}
-                              style={{
-                                fontSize: '14px',
-                                fontWeight: '400',
-                                color: 'var(--color-text-dark)',
-                                border: '1px solid var(--color-border-medium)',
-                                borderRadius: '4px',
-                                padding: '2px 6px',
-                                background: 'var(--color-white)',
-                                width: '100%'
-                              }}
-                            />
-                          )
-                        ) : (
-                          <span style={{ 
-                            fontSize: '14px',
-                            fontWeight: '400',
-                            color: 'var(--color-text-dark)'
-                          }}>
-                            {value}
-                          </span>
-                        )}
+                        <span style={{ 
+                          fontSize: '14px',
+                          fontWeight: '400',
+                          color: 'var(--color-text-dark)'
+                        }}>
+                          {value}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -348,34 +171,14 @@ const AssetHistory = ({ assetRequests, setAssetRequests }) => {
                       }}>
                         Description
                       </span>
-                      {editingRequest === request.id ? (
-                        <textarea
-                          name="description"
-                          value={editForm.description}
-                          onChange={handleInputChange}
-                          style={{
-                            width: '100%',
-                            fontSize: '14px',
-                            color: 'var(--color-text-dark)',
-                            lineHeight: '1.4',
-                            border: '1px solid var(--color-border-medium)',
-                            borderRadius: '4px',
-                            padding: '6px',
-                            background: 'var(--color-white)',
-                            minHeight: '60px',
-                            resize: 'vertical'
-                          }}
-                        />
-                      ) : (
-                        <p style={{ 
-                          margin: '0', 
-                          fontSize: '14px',
-                          color: 'var(--color-text-dark)',
-                          lineHeight: '1.4'
-                        }}>
-                          {request.description}
-                        </p>
-                      )}
+                      <p style={{ 
+                        margin: '0', 
+                        fontSize: '14px',
+                        color: 'var(--color-text-dark)',
+                        lineHeight: '1.4'
+                      }}>
+                        {request.description}
+                      </p>
                     </div>
                   )}
                 </div>

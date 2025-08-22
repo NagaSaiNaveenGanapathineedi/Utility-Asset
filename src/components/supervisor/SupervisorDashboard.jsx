@@ -133,6 +133,17 @@ const SupervisorDashboard = () => {
 		{ workId: 'WO005', planId: 'PLN-105', scheduledDate: '2025-08-02', status: 'Open', description: 'Replace broken monitor in Conference Room A', requestedBy: 'Helen Clark',maintenancePlan:"Yearly", requestedById: 'USR-005', assignedTo: '', assignedToId: '' }
 	]);
 	const [selectedTechnician, setSelectedTechnician] = useState(null);
+	// Technicians state with localStorage persistence (seeded from default export)
+	const [technicianList, setTechnicianList] = useState(() => {
+		try {
+			const saved = JSON.parse(localStorage.getItem('technicians') || 'null');
+			if (Array.isArray(saved) && saved.length > 0) return saved;
+		} catch {}
+		return technicians;
+	});
+	useEffect(() => {
+		try { localStorage.setItem('technicians', JSON.stringify(technicianList)); } catch {}
+	}, [technicianList]);
 
 	useEffect(() => {
 		const t = setTimeout(() => {
@@ -142,6 +153,25 @@ const SupervisorDashboard = () => {
 		}, 50);
 		return () => clearTimeout(t);
 	}, [activeTab]);
+	// Sync work orders from localStorage when other tabs update
+	useEffect(() => {
+		const syncFromStorage = () => {
+			try {
+				const stored = JSON.parse(localStorage.getItem('assignedWorkOrders') || '[]');
+				if (!Array.isArray(stored)) return;
+				setWorkOrders(prev => {
+					const map = new Map(prev.map(o => [o.workId, o]));
+					stored.forEach(s => {
+						const existing = map.get(s.workId) || {};
+						map.set(s.workId, { ...existing, ...s });
+					});
+					return Array.from(map.values());
+				});
+			} catch {}
+		};
+		window.addEventListener('workOrdersUpdated', syncFromStorage);
+		return () => window.removeEventListener('workOrdersUpdated', syncFromStorage);
+	}, []);
 
 	const toggleMenu = (menuKey) => {
 		setExpandedMenus(prev => {
@@ -158,7 +188,7 @@ const SupervisorDashboard = () => {
 		{ key: 'assets', label: 'Assets', icon: Database, items: [ { id: 'asset-registration', label: 'Asset Registration', icon: Plus }, { id: 'search-assets', label: 'Search Assets', icon: Search } ] },
 		{ key: 'maintenance', label: 'Maintenance Plan', icon: Calendar, items: [ /*{ id: 'plan-creation', label: 'Plan Creation', icon: Plus },*/ { id: 'view-plan', label: 'View Plan', icon: FileText }/*, { id: 'update-plan', label: 'Update Plan', icon: Edit } */] },
 		{ key: 'workOrder', label: 'Work Order', icon: Clipboard, items: [ { id: 'assign-work', label: 'Assign Work', icon: UserCheck } ] },
-		{ key: 'technician', label: 'Assigned Technician', icon: Users, items: [ { id: 'search-technician', label: 'Search Technician', icon: Search }, { id: 'view-assignments', label: 'View Assignments', icon: FileText } ] },
+		{ key: 'technician', label: 'Assigned Technician', icon: Users, items: [ { id: 'search-technician', label: 'Search Technician', icon: Search }, { id: 'register-technician', label: 'Register Technician', icon: Plus }, { id: 'view-assignments', label: 'View Assignments', icon: FileText } ] },
 		{ key: 'reports', label: 'Reports', icon: BarChart3, items: [ { id: 'asset-history', label: 'Asset History', icon: FileText }, { id: 'technician-summary', label: 'Technician Summary', icon: TrendingUp } ] }
 	];
 
@@ -178,7 +208,7 @@ const SupervisorDashboard = () => {
 			case 'search-assets':
 				return <SearchAssets registeredAssets={registeredAssets} setRegisteredAssets={setRegisteredAssets} />;
 			case 'assign-work':
-				return <AssignWork workOrders={workOrders} setWorkOrders={setWorkOrders} />;
+				return <AssignWork workOrders={workOrders} setWorkOrders={setWorkOrders} technicians={technicianList} />;
 			case 'view-assignments':
 				return <ViewAssignments workOrders={workOrders} selectedTechnician={selectedTechnician} onClearFilter={() => setSelectedTechnician(null)} />;
 			case 'asset-history':
@@ -188,12 +218,15 @@ const SupervisorDashboard = () => {
 			case 'search-technician':
 				return (
 					<SearchTechnicians
+						technicians={technicianList}
 						onViewAssignments={(tech) => {
 							setSelectedTechnician(tech);
 							setActiveTab('view-assignments');
 						}}
 					/>
 				);
+			case 'register-technician':
+				return <RegisterTechnician technicians={technicianList} setTechnicians={setTechnicianList} />;
 			default:
 				return <AssetRegistration registeredAssets={registeredAssets} setRegisteredAssets={setRegisteredAssets} />;
 		}
@@ -313,6 +346,10 @@ const SearchAssets = ({ registeredAssets, setRegisteredAssets }) => {
 	const [searchTerm, setSearchTerm] = useState('');
 	const [selectedType, setSelectedType] = useState('');
 	const [filteredAssets, setFilteredAssets] = useState(registeredAssets);
+	// Edit modal state
+	const [isEditOpen, setIsEditOpen] = useState(false);
+	const [editingAsset, setEditingAsset] = useState(null);
+	const [editForm, setEditForm] = useState({ assetId: '', assetName: '', type: '', status: 'Available', location: '', region: '', siteCode: '', description: '' });
 	useEffect(() => {
 		let list = [...registeredAssets];
 		if (searchTerm) list = list.filter(a => [a.assetId, a.assetName, a.type, a.location, a.region, a.siteCode].some(v => v.toLowerCase().includes(searchTerm.toLowerCase())));
@@ -320,7 +357,38 @@ const SearchAssets = ({ registeredAssets, setRegisteredAssets }) => {
 		setFilteredAssets(list);
 	}, [registeredAssets, searchTerm, selectedType]);
 	const assetTypes = Array.from(new Set(registeredAssets.map(a => a.type)));
-	const handleEditAsset = (assetId) => alert(`Edit functionality for asset ${assetId} would open an edit modal here.`);
+	// Open edit modal with selected asset data
+	const handleEditAsset = (assetId) => {
+		const asset = registeredAssets.find(a => a.assetId === assetId);
+		if (!asset) return;
+		setEditingAsset(asset);
+		setEditForm({
+			assetId: asset.assetId || '',
+			assetName: asset.assetName || '',
+			type: asset.type || '',
+			status: asset.status || 'Available',
+			location: asset.location || '',
+			region: asset.region || '',
+			siteCode: asset.siteCode || '',
+			description: asset.description || ''
+		});
+		setIsEditOpen(true);
+	};
+	const handleEditChange = (e) => {
+		const { name, value } = e.target;
+		setEditForm(prev => ({ ...prev, [name]: value }));
+	};
+	const handleSaveEdit = (e) => {
+		e?.preventDefault?.();
+		if (!editingAsset) return;
+		if (!editForm.assetId || !editForm.assetName || !editForm.type || !editForm.location || !editForm.region || !editForm.siteCode) {
+			alert('Please fill in all required fields');
+			return;
+		}
+		setRegisteredAssets(prev => prev.map(a => a.id === editingAsset.id ? { ...a, ...editForm } : a));
+		setIsEditOpen(false);
+		setEditingAsset(null);
+	};
 	const handleDeleteAsset = (assetId) => { if (window.confirm('Are you sure you want to delete this asset?')) { setRegisteredAssets(prev => prev.filter(a => a.id !== assetId)); alert('Asset deleted successfully!'); } };
 	return (
 		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
@@ -361,11 +429,45 @@ const SearchAssets = ({ registeredAssets, setRegisteredAssets }) => {
 					))}
 				</div>
 			)}
+			<Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Update Asset" maxWidth="700px">
+				<form onSubmit={handleSaveEdit} style={{ width: '100%' }}>
+					<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+						{[
+							{ name: 'assetId', label: 'Asset ID *', type: 'text', placeholder: 'Enter asset ID' },
+							{ name: 'assetName', label: 'Asset Name *', type: 'text', placeholder: 'Enter asset name' },
+							{ name: 'type', label: 'Type *', type: 'select', options: ['', 'Server', 'HVAC', 'Printer', 'Network Equipment', 'Generator'] },
+							{ name: 'status', label: 'Status *', type: 'select', options: ['Available', 'Not Available', 'Maintenance'] },
+							{ name: 'location', label: 'Location *', type: 'text', placeholder: 'Enter location' },
+							{ name: 'region', label: 'Region *', type: 'text', placeholder: 'Enter region' },
+							{ name: 'siteCode', label: 'Site Code *', type: 'text', placeholder: 'Enter site code' }
+						].map((f) => (
+							<div key={f.name} className="form-group">
+								<label style={styles.label}>{f.label}</label>
+								{f.type === 'select' ? (
+									<select name={f.name} value={editForm[f.name]} onChange={handleEditChange} style={styles.input}>
+										{f.options.map((o) => (<option key={o} value={o}>{o ? o : 'Select type'}</option>))}
+									</select>
+								) : (
+									<input name={f.name} type="text" value={editForm[f.name]} onChange={handleEditChange} style={styles.input} placeholder={f.placeholder} />
+								)}
+							</div>
+						))}
+					</div>
+					<div className="form-group" style={{ marginBottom: '16px' }}>
+						<label style={styles.label}>Description</label>
+						<textarea name="description" value={editForm.description} onChange={handleEditChange} placeholder="Enter asset description..." style={{ ...styles.input, minHeight: '90px', resize: 'vertical' }} rows="4" />
+					</div>
+					<div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+						<button type="button" className="btn" onClick={() => setIsEditOpen(false)} style={{ padding: '10px 16px' }}>Cancel</button>
+						<motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" className="btn btn-primary" style={{ padding: '10px 16px', fontWeight: '600' }}>Save Changes</motion.button>
+					</div>
+				</form>
+			</Modal>
 		</motion.div>
 	);
 };
 
-const AssignWork = ({ workOrders, setWorkOrders }) => {
+const AssignWork = ({ workOrders, setWorkOrders, technicians }) => {
 	const [pendingAssigneeByWorkId, setPendingAssigneeByWorkId] = useState({});
 	const handleAssigneeSelect = (workId, techName) => {
 		setPendingAssigneeByWorkId(prev => ({ ...prev, [workId]: techName }));
@@ -388,6 +490,7 @@ const AssignWork = ({ workOrders, setWorkOrders }) => {
 			return updated;
 		});
 		setPendingAssigneeByWorkId(prev => { const { [workId]: _, ...rest } = prev; return rest; });
+		try { window.dispatchEvent(new CustomEvent('workOrdersUpdated')); } catch {}
 	};
 	return (
 		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
@@ -546,15 +649,77 @@ const TechnicianSummary = ({ workOrders }) => {
 	);
 };
 
+// Register Technician Component
+const RegisterTechnician = ({ technicians, setTechnicians }) => {
+	const [form, setForm] = useState({ name: '', skill: '', region: '' });
+	const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+	const computeNextId = (list) => {
+		const maxNum = list.reduce((max, t) => {
+			const match = String(t.technicianId || '').match(/T-(\d+)/i);
+			const num = match ? parseInt(match[1], 10) : 0;
+			return Math.max(max, num);
+		}, 0);
+		const next = maxNum + 1;
+		return `T-${String(next).padStart(3, '0')}`;
+	};
+	const handleSubmit = (e) => {
+		e.preventDefault();
+		if (!form.name || !form.skill || !form.region) {
+			alert('Please fill in all fields');
+			return;
+		}
+		const nextId = computeNextId(technicians);
+		setTechnicians(prev => [...prev, { technicianId: nextId, name: form.name, skill: form.skill, region: form.region }]);
+		alert(`Technician registered successfully with ID ${nextId}`);
+		setForm({ name: '', skill: '', region: '' });
+	};
+	const skills = ['', 'HVAC', 'Electrical', 'Network', 'Mechanical', 'Generator', 'Fire Safety'];
+	const regions = ['', 'North Zone', 'South Zone', 'East Zone', 'West Zone', 'Central Zone'];
+	const nextIdPreview = computeNextId(technicians);
+	return (
+		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
+			<h2 style={{ color: 'var(--color-text-dark)' }}>Register Technician</h2>
+			<p style={{ color: 'var(--color-text-medium)', fontSize: '1rem', marginBottom: '30px' }}>Add a new technician to the system</p>
+			<form onSubmit={handleSubmit} style={{ width: '100%' }}>
+				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+					<div className="form-group">
+						<label style={styles.label}>Generated Technician ID</label>
+						<input type="text" value={nextIdPreview} readOnly style={{ ...styles.input, opacity: 0.8, cursor: 'not-allowed' }} />
+					</div>
+					<div className="form-group">
+						<label style={styles.label}>Name *</label>
+						<input name="name" type="text" value={form.name} onChange={handleChange} style={styles.input} placeholder="Enter full name" />
+					</div>
+					<div className="form-group">
+						<label style={styles.label}>Skill *</label>
+						<select name="skill" value={form.skill} onChange={handleChange} style={styles.input}>
+							{skills.map(s => (<option key={s} value={s}>{s || 'Select skill'}</option>))}
+						</select>
+					</div>
+					<div className="form-group">
+						<label style={styles.label}>Region *</label>
+						<select name="region" value={form.region} onChange={handleChange} style={styles.input}>
+							{regions.map(r => (<option key={r} value={r}>{r || 'Select region'}</option>))}
+						</select>
+					</div>
+				</div>
+				<div style={{ display: 'flex', justifyContent: 'center' }}>
+					<motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" className="btn btn-primary" style={{ minWidth: '200px', padding: '12px 24px', fontSize: '16px', fontWeight: '600' }}>Register</motion.button>
+				</div>
+			</form>
+		</motion.div>
+	);
+};
+
 // Technician Search (similar to SearchAssets)
-const SearchTechnicians = ({ onViewAssignments }) => {
+const SearchTechnicians = ({ technicians, onViewAssignments }) => {
 	const [searchTerm, setSearchTerm] = useState('');
 	const [filtered, setFiltered] = useState(technicians);
 	useEffect(() => {
 		let list = [...technicians];
 		if (searchTerm) list = list.filter(t => [t.technicianId, t.name, t.skill, t.region].some(v => String(v).toLowerCase().includes(searchTerm.toLowerCase())));
 		setFiltered(list);
-	}, [searchTerm]);
+	}, [searchTerm, technicians]);
 	return (
 		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
 			<h2 style={{ color: 'var(--color-text-dark)' }}>Search Technicians</h2>
