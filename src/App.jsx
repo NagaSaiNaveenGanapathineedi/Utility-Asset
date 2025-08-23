@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -9,7 +9,7 @@ import AdminDashboard from './components/admin/AdminDashboard';
 import SupervisorDashboard from './components/supervisor/SupervisorDashboard';
 import TechnicianDashboard from './components/technician/TechnicianDashboard';
 import ScrollToTop from './components/ScrollToTop';
-
+import { AppDataProvider } from './context/AppDataContext.jsx';
 
 // Authentication Context
 const AuthContext = createContext();
@@ -22,17 +22,21 @@ export const useAuth = () => {
   return context;
 };
 
-// App Content Component (inside Router)
-function AppContent() {
+function roleToPath(role) {
+  if (role === 'admin') return '/admin-dashboard';
+  if (role === 'supervisor') return '/supervisor-dashboard';
+  if (role === 'technician') return '/technician-dashboard';
+  return '/dashboard';
+}
+
+function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  // Check localStorage on app load
   useEffect(() => {
     const savedAuth = localStorage.getItem('isAuthenticated');
     const savedUser = localStorage.getItem('user');
-    
     if (savedAuth === 'true' && savedUser) {
       setIsAuthenticated(true);
       setUser(JSON.parse(savedUser));
@@ -42,21 +46,16 @@ function AppContent() {
   const login = (userData) => {
     setIsAuthenticated(true);
     setUser(userData);
-    // Persist to localStorage
     localStorage.setItem('isAuthenticated', 'true');
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const logout = () => {
-    console.log('Logout function called - clearing authentication');
     setIsAuthenticated(false);
     setUser(null);
-    // Clear localStorage
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('user');
-    // Navigate to landing page
     navigate('/', { replace: true });
-    console.log('Logout completed - user redirected to landing page');
   };
 
   const hasPermission = (permission) => {
@@ -65,82 +64,59 @@ function AppContent() {
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, user, login, logout, hasPermission }}>
-      <Routes>
-        {/* Public Routes */}
-        <Route 
-          path="/login" 
-          element={!isAuthenticated ? <LoginPage /> : 
-            user?.role === 'admin' ? <Navigate to="/admin-dashboard" /> :
-            user?.role === 'supervisor' ? <Navigate to="/supervisor-dashboard" /> :
-            user?.role === 'technician' ? <Navigate to="/technician-dashboard" /> :
-            <Navigate to="/dashboard" />} 
-        />
-        <Route 
-          path="/register" 
-          element={!isAuthenticated ? <RegisterPage /> : 
-            user?.role === 'admin' ? <Navigate to="/admin-dashboard" /> :
-            user?.role === 'supervisor' ? <Navigate to="/supervisor-dashboard" /> :
-            user?.role === 'technician' ? <Navigate to="/technician-dashboard" /> :
-            <Navigate to="/dashboard" />} 
-        />
-        <Route 
-          path="/forgot-password" 
-          element={!isAuthenticated ? <ForgotPasswordPage /> : 
-            user?.role === 'admin' ? <Navigate to="/admin-dashboard" /> :
-            user?.role === 'supervisor' ? <Navigate to="/supervisor-dashboard" /> :
-            user?.role === 'technician' ? <Navigate to="/technician-dashboard" /> :
-            <Navigate to="/dashboard" />} 
-        />
-        
-        {/* Protected Routes */}
-        <Route 
-          path="/dashboard" 
-          element={isAuthenticated ? <UserDashboard /> : <Navigate to="/" replace />} 
-        />
-        <Route 
-          path="/admin-dashboard" 
-          element={isAuthenticated && user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" replace />} 
-        />
-        <Route 
-          path="/supervisor-dashboard" 
-          element={isAuthenticated && user?.role === 'supervisor' ? <SupervisorDashboard /> : <Navigate to="/" replace />} 
-        />
-        <Route 
-          path="/technician-dashboard" 
-          element={isAuthenticated && user?.role === 'technician' ? <TechnicianDashboard /> : <Navigate to="/" replace />} 
-        />
-
-        
-        {/* Default Routes */}
-        <Route 
-          path="/" 
-          element={isAuthenticated ? 
-            user?.role === 'admin' ? <Navigate to="/admin-dashboard" /> :
-            user?.role === 'supervisor' ? <Navigate to="/supervisor-dashboard" /> :
-            user?.role === 'technician' ? <Navigate to="/technician-dashboard" /> :
-            <Navigate to="/dashboard" /> : 
-            <LandingPage />} 
-        />
-        <Route 
-          path="*" 
-          element={isAuthenticated ? 
-            user?.role === 'admin' ? <Navigate to="/admin-dashboard" /> :
-            user?.role === 'supervisor' ? <Navigate to="/supervisor-dashboard" /> :
-            user?.role === 'technician' ? <Navigate to="/technician-dashboard" /> :
-            <Navigate to="/dashboard" /> : 
-            <Navigate to="/login" />} 
-        />
-      </Routes>
+      {children}
     </AuthContext.Provider>
   );
 }
 
-// Main App Component
-export default function App() {
+// Public route wrapper: if already authenticated, redirect based on role
+export function RedirectIfAuthenticated({ children }) {
+  const { isAuthenticated, user } = useAuth();
+  if (isAuthenticated) {
+    return <Navigate to={roleToPath(user?.role)} replace />;
+  }
+  return children;
+}
+
+// Protected route wrapper: requires authenticated user
+export function RequireAuth({ children }) {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
+
+// Role-based wrapper
+export function RequireRole({ role, children }) {
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated) return <Navigate to="/" replace />;
+  if (user?.role !== role) return <Navigate to={roleToPath(user?.role)} replace />;
+  return children;
+}
+
+// Root layout used by data router
+export default function RootLayout() {
   return (
-    <Router>
+    <>
       <ScrollToTop />
-      <AppContent />
-    </Router>
+      <AppDataProvider>
+        <AuthProvider>
+          <Outlet />
+        </AuthProvider>
+      </AppDataProvider>
+    </>
   );
-} 
+}
+
+// Export pages to ease imports elsewhere if desired
+export {
+  LandingPage,
+  LoginPage,
+  RegisterPage,
+  ForgotPasswordPage,
+  UserDashboard,
+  AdminDashboard,
+  SupervisorDashboard,
+  TechnicianDashboard
+}; 

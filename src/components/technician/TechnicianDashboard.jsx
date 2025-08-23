@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import TechnicianHeader from './TechnicianHeader';
 import Modal from '../Modal';
@@ -14,6 +14,8 @@ import {
   MapPin,
   User
 } from 'lucide-react';
+import { useAppData } from '../../context/AppDataContext.jsx';
+import { useAuth } from '../../App';
 
 export const  technicians = [
   { technicianId: 'T-001', name: 'Alice Johnson', skill: 'HVAC', region: 'North Zone' },
@@ -89,7 +91,8 @@ const TechnicianDashboard = () => {
             {[
               { id: 'workOrders', label: 'Work Orders', icon: ClipboardList },
               { id: 'history', label: 'Work History', icon: FileText },
-              { id: 'reports', label: 'Reports', icon: BarChart3 }
+              { id: 'reports', label: 'Reports', icon: BarChart3 },
+              { id: 'profile', label: 'Profile', icon: User }
             ].map(({ id, label, icon: Icon }) => (
               <li key={id}>
                 <button
@@ -121,50 +124,34 @@ const TechnicianDashboard = () => {
 
 // Work Orders Component
 const WorkOrders = () => {
-  // Load assigned work orders from localStorage and filter by logged-in technician
+  const { workOrders, setWorkOrders } = useAppData();
+  const { user } = useAuth();
   const [orders, setOrders] = useState([]);
-  const [confirmStatusById, setConfirmStatusById] = useState(() => {
-    try {
-      return JSON.parse(sessionStorage.getItem('techConfirmStatusById') || '{}');
-    } catch {
-      return {};
-    }
-  });
+  const [confirmStatusById, setConfirmStatusById] = useState({});
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  useEffect(() => {
-    const loadOrders = () => {
-      try {
-        const all = JSON.parse(localStorage.getItem('assignedWorkOrders') || '[]');
-        const user = JSON.parse(localStorage.getItem('user') || 'null');
-        const techId = user?.employeeId || user?.technicianId; // support either field if present
-        const techName = user?.name;
-        const mine = all.filter(o => (o.assignedToId && techId && o.assignedToId === techId) || (o.assignedTo && techName && o.assignedTo === techName));
-
-        // Hardcoded example work orders for this technician
-        const hardcoded = techId || techName ? [
-          { workId: 'HWO-101', description: 'Inspect rooftop ventilation system', priority: 'High', status: 'Assigned', scheduledDate: '2025-08-10', requestedBy: 'System', requestedById: 'SYS-001', assignedToId: techId || '', assignedTo: techName || '' },
-          { workId: 'HWO-102', description: 'Test backup generator auto-start', priority: 'Medium', status: 'Open', scheduledDate: '2025-08-12', requestedBy: 'Operations', requestedById: 'OPS-002', assignedToId: techId || '', assignedTo: techName || '' },
-          { workId: 'HWO-103', description: 'Replace server room air filter', priority: 'Low', status: 'Assigned', scheduledDate: '2025-08-15', requestedBy: 'IT Dept', requestedById: 'IT-003', assignedToId: techId || '', assignedTo: techName || '' }
-        ] : [];
-
-        // Merge by workId, preferring assigned entries
-        const mergedMap = new Map();
-        [...hardcoded, ...mine].forEach(o => { mergedMap.set(o.workId, o); });
-        setOrders(Array.from(mergedMap.values()));
-      } catch {
-        setOrders([]);
-      }
-    };
-    loadOrders();
-    const handler = () => loadOrders();
-    window.addEventListener('workOrdersUpdated', handler);
-    return () => window.removeEventListener('workOrdersUpdated', handler);
-  }, []);
+  const seededRef = useRef(false);
 
   useEffect(() => {
-    try { sessionStorage.setItem('techConfirmStatusById', JSON.stringify(confirmStatusById)); } catch {}
-  }, [confirmStatusById]);
+    const techId = user?.employeeId || user?.technicianId;
+    const techName = user?.name;
+    const mine = workOrders.filter(o => (o.assignedToId && techId && o.assignedToId === techId) || (o.assignedTo && techName && o.assignedTo === techName));
+    if (!seededRef.current && mine.length === 0 && (techId || techName)) {
+      const baseId = (techId || techName || 'TECH').toString().replace(/[^A-Za-z0-9]/g, '').slice(-6) || 'TECH';
+      const dummies = [
+        { workId: `HWO-${baseId}-01`, description: 'Inspect rooftop ventilation system', priority: 'High', status: 'Assigned', scheduledDate: '2025-08-10', requestedBy: 'System', requestedById: 'SYS-001', assignedToId: techId || '', assignedTo: techName || '' },
+        { workId: `HWO-${baseId}-02`, description: 'Test backup generator auto-start', priority: 'Medium', status: 'Open', scheduledDate: '2025-08-12', requestedBy: 'Operations', requestedById: 'OPS-002', assignedToId: techId || '', assignedTo: techName || '' },
+        { workId: `HWO-${baseId}-03`, description: 'Replace server room air filter', priority: 'Low', status: 'Assigned', scheduledDate: '2025-08-15', requestedBy: 'IT Dept', requestedById: 'IT-003', assignedToId: techId || '', assignedTo: techName || '' }
+      ];
+      setWorkOrders(prev => {
+        const ids = new Set(prev.map(o => o.workId));
+        const toAdd = dummies.filter(d => !ids.has(d.workId));
+        return toAdd.length ? [...prev, ...toAdd] : prev;
+      });
+      seededRef.current = true;
+    }
+    setOrders(mine);
+  }, [workOrders, user]);
 
   const handleConfirmSelect = (id, value) => {
     setConfirmStatusById(prev => ({ ...prev, [id]: value }));
@@ -181,33 +168,8 @@ const WorkOrders = () => {
     const selected = confirmStatusById[id];
     if (!selected) return;
 
-    const originalOrder = orders.find(o => o.workId === id);
-
-    // If marking as Done, record it under completed work orders
-    if (selected === 'Done' && originalOrder) {
-      try {
-        const completed = JSON.parse(localStorage.getItem('completedWorkOrders') || '[]');
-        const completedMap = new Map(completed.map(o => [o.workId, o]));
-        completedMap.set(originalOrder.workId, { ...originalOrder, status: 'Done', completedAt: new Date().toISOString() });
-        localStorage.setItem('completedWorkOrders', JSON.stringify(Array.from(completedMap.values())));
-      } catch {}
-    }
-
-    setOrders(prev => prev.map(o => o.workId === id ? { ...o, status: selected } : o));
-    // Persist to assignedWorkOrders, creating if missing
-    try {
-      const list = JSON.parse(localStorage.getItem('assignedWorkOrders') || '[]');
-      const idx = list.findIndex(o => o.workId === id);
-      if (idx >= 0) {
-        list[idx] = { ...list[idx], status: selected };
-      } else if (originalOrder) {
-        list.push({ ...originalOrder, status: selected });
-      }
-      localStorage.setItem('assignedWorkOrders', JSON.stringify(list));
-    } catch {}
+    setWorkOrders(prev => prev.map(o => o.workId === id ? { ...o, status: selected, completedAt: selected === 'Done' ? new Date().toISOString() : o.completedAt } : o));
     setConfirmStatusById(prev => { const { [id]: _, ...rest } = prev; return rest; });
-    // Notify other components/tabs
-    try { window.dispatchEvent(new CustomEvent('workOrdersUpdated')); } catch {}
   };
 
   const getStatusColor = (status) => {
@@ -237,10 +199,6 @@ const WorkOrders = () => {
         return 'var(--color-text-medium)';
     }
   };
-
-  const pendingCount = orders.filter(o => o.status === 'Open' || o.status === 'Assigned').length;
-  const inProgressCount = orders.filter(o => o.status === 'In Progress').length;
-  const doneTodayCount = 0; // placeholder, no completion timestamps yet
 
   return (
     <motion.div
@@ -384,46 +342,18 @@ const WorkOrders = () => {
 
 // Reports Overview (moved stats here)
 const ReportsOverview = () => {
-  const [orders, setOrders] = useState([]);
-  const [completed, setCompleted] = useState([]);
-  useEffect(() => {
-    const load = () => {
-      try {
-        const all = JSON.parse(localStorage.getItem('assignedWorkOrders') || '[]');
-        setOrders(Array.isArray(all) ? all : []);
-      } catch {
-        setOrders([]);
-      }
-      try {
-        const done = JSON.parse(localStorage.getItem('completedWorkOrders') || '[]');
-        setCompleted(Array.isArray(done) ? done : []);
-      } catch {
-        setCompleted([]);
-      }
-    };
-    load();
-    const handler = () => load();
-    window.addEventListener('workOrdersUpdated', handler);
-    return () => window.removeEventListener('workOrdersUpdated', handler);
-  }, []);
-  // Filter by current technician
-  let techId = '';
-  let techName = '';
-  try {
-    const user = JSON.parse(localStorage.getItem('user') || 'null');
-    techId = user?.employeeId || user?.technicianId || '';
-    techName = user?.name || '';
-  } catch {}
-  const mineAssigned = orders.filter(o => (o.assignedToId && techId && o.assignedToId === techId) || (o.assignedTo && techName && o.assignedTo === techName));
-  const mineCompleted = completed.filter(o => (o.assignedToId && techId && o.assignedToId === techId) || (o.assignedTo && techName && o.assignedTo === techName));
-
-  const pendingCount = mineAssigned.filter(o => o.status === 'Open' || o.status === 'Assigned').length;
-  const inProgressCount = mineAssigned.filter(o => o.status === 'In Progress').length;
-  const totalCompleted = mineCompleted.length;
+  const { workOrders } = useAppData();
+  const { user } = useAuth();
+  const techId = user?.employeeId || user?.technicianId;
+  const techName = user?.name;
+  const mine = workOrders.filter(o => (o.assignedToId && techId && o.assignedToId === techId) || (o.assignedTo && techName && o.assignedTo === techName));
+  const pendingCount = mine.filter(o => o.status === 'Open' || o.status === 'Assigned').length;
+  const inProgressCount = mine.filter(o => o.status === 'In Progress').length;
+  const doneTodayCount = mine.filter(o => o.status === 'Done').length; // simplistic
   const stats = [
-    { icon: Clock, label: 'Pending', value: String(pendingCount), color: 'var(--status-open-text)' },
+    { icon: Clock, label: 'Yet to Start', value: String(pendingCount), color: 'var(--status-open-text)' },
     { icon: Wrench, label: 'In Progress', value: String(inProgressCount), color: 'var(--status-in-progress-text)' },
-    { icon: CheckCircle, label: 'Completed', value: String(totalCompleted), color: 'var(--status-completed-text)' }
+    { icon: CheckCircle, label: 'Completed', value: String(doneTodayCount), color: 'var(--status-completed-text)' }
   ];
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
@@ -467,24 +397,11 @@ const ReportsOverview = () => {
 
 // Work History (moved from Reports content)
 const WorkHistory = () => {
-  const [completed, setCompleted] = useState([]);
-
-  useEffect(() => {
-    const load = () => {
-      try {
-        const list = JSON.parse(localStorage.getItem('completedWorkOrders') || '[]');
-        setCompleted(Array.isArray(list) ? list : []);
-      } catch {
-        setCompleted([]);
-      }
-    };
-    load();
-    const handler = () => load();
-    window.addEventListener('workOrdersUpdated', handler);
-    return () => window.removeEventListener('workOrdersUpdated', handler);
-  }, []);
-
-  if (completed.length === 0) return null;
+  const { workOrders } = useAppData();
+  const { user } = useAuth();
+  const techId = user?.employeeId || user?.technicianId;
+  const techName = user?.name;
+  const completed = workOrders.filter(o => (o.assignedToId && techId && o.assignedToId === techId) || (o.assignedTo && techName && o.assignedTo === techName)).filter(o => o.status === 'Done');
 
   return (
     <motion.div
@@ -502,34 +419,48 @@ const WorkHistory = () => {
         Completed work orders
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-        {completed.map((order) => (
-          <div key={order.workId} style={{
-            background: 'var(--color-white)',
-            border: '1px solid var(--color-border-light)',
-            borderRadius: '8px',
-            padding: '16px'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-              <h3 style={{ color: 'var(--color-text-dark)', margin: 0, fontSize: '1rem' }}>{order.description}</h3>
-              <span style={{
-                padding: '4px 8px',
-                borderRadius: '4px',
-                fontSize: '0.8rem',
-                fontWeight: '500',
-                background: 'var(--status-completed-bg)',
-                color: 'var(--status-completed-text)'
-              }}>Done</span>
+      {completed.length === 0 ? (
+        <div style={{
+          textAlign: 'center',
+          padding: '40px',
+          color: 'var(--color-text-medium)',
+          backgroundColor: 'var(--color-body-bg)',
+          borderRadius: '8px'
+        }}>
+          <BarChart3 size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
+          <h3 style={{ color: 'var(--color-text-dark)', marginBottom: '8px' }}>No completed work orders</h3>
+          <p>Completed items will appear here after you mark them as Done.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+          {completed.map((order) => (
+            <div key={order.workId} style={{
+              background: 'var(--color-white)',
+              border: '1px solid var(--color-border-light)',
+              borderRadius: '8px',
+              padding: '16px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                <h3 style={{ color: 'var(--color-text-dark)', margin: 0, fontSize: '1rem' }}>{order.description}</h3>
+                <span style={{
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: '0.8rem',
+                  fontWeight: '500',
+                  background: 'var(--status-completed-bg)',
+                  color: 'var(--status-completed-text)'
+                }}>Done</span>
+              </div>
+              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>ID:</strong> {order.workId}</p>
+              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Scheduled:</strong> {order.scheduledDate}</p>
+              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Requested By:</strong> {order.requestedBy} ({order.requestedById})</p>
+              {order.completedAt && (
+                <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Completed:</strong> {new Date(order.completedAt).toLocaleString()}</p>
+              )}
             </div>
-            <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>ID:</strong> {order.workId}</p>
-            <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Scheduled:</strong> {order.scheduledDate}</p>
-            <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Requested By:</strong> {order.requestedBy} ({order.requestedById})</p>
-            {order.completedAt && (
-              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Completed:</strong> {new Date(order.completedAt).toLocaleString()}</p>
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 };
@@ -640,33 +571,85 @@ const TechnicianReports = () => {
 };
 
 // Technician Profile Component
-const TechnicianProfile = () => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4 }}
-    className="card"
-  >
-    <h2 style={{ color: 'var(--color-text-dark)' }}>My Profile</h2>
-    <p style={{ 
-      color: 'var(--color-text-medium)',
-      fontSize: '1rem',
-      marginBottom: '30px'
-    }}>
-      View and update your profile information and certifications
-    </p>
-    <div style={{ 
-      textAlign: 'center', 
-      padding: '40px', 
-      color: 'var(--color-text-medium)',
-      backgroundColor: 'var(--color-body-bg)',
-      borderRadius: '8px'
-    }}>
-      <User size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
-      <h3 style={{ color: 'var(--color-text-dark)', marginBottom: '8px' }}>Technician Profile</h3>
-      <p>Manage your personal information, skills, and certifications.</p>
-    </div>
-  </motion.div>
-);
+const TechnicianProfile = () => {
+  const { technicians, setTechnicians } = useAppData();
+  const { user, login } = useAuth();
+  const techId = user?.employeeId || user?.technicianId || '';
+  const existing = technicians.find(t => t.technicianId === techId);
+  const technicianIdValue = existing?.technicianId || user?.technicianId || user?.employeeId || '';
+  const [form, setForm] = useState({
+    name: existing?.name || user?.name || '',
+    skill: existing?.skill || '',
+    region: existing?.region || '',
+    phone: existing?.phone || user?.phone || ''
+  });
+  const [isEditing, setIsEditing] = useState(false);
+  const email = user?.email || 'technician@example.com';
+  const department = user?.department || 'Maintenance';
+  const skills = ['', 'HVAC', 'Electrical', 'Network', 'Mechanical', 'Generator', 'Fire Safety'];
+  const regions = ['', 'North Zone', 'South Zone', 'East Zone', 'West Zone', 'Central Zone'];
+  const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleSave = () => {
+    if (!form.name || !form.skill || !form.region || !techId) {
+      alert('Please fill all fields');
+      return;
+    }
+    setTechnicians(prev => {
+      const idx = prev.findIndex(t => t.technicianId === techId);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = { ...copy[idx], name: form.name, skill: form.skill, region: form.region, phone: form.phone };
+        return copy;
+      }
+      return [...prev, { technicianId: techId, name: form.name, skill: form.skill, region: form.region, phone: form.phone }];
+    });
+    if (user) login({ ...user, name: form.name, phone: form.phone });
+    setIsEditing(false);
+    alert('Profile updated');
+  };
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="card"
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <h2 style={{ color: 'var(--color-text-dark)', margin: 0 }}>My Profile</h2>
+        <button
+          className="btn btn-primary"
+          style={{ padding: '10px 16px', fontWeight: 600 }}
+          onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
+        >
+          {isEditing ? 'Save' : 'Edit'}
+        </button>
+      </div>
+      <form style={{ width: '100%' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+          <div className="form-group">
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: 'var(--color-text-dark)' }}>Phone Number *</label>
+            <input name="phone" type="tel" value={form.phone} onChange={handleChange} disabled={!isEditing} style={{ width: '100%', padding: '12px 16px', border: '2px solid var(--color-border-medium)', borderRadius: '8px', background: !isEditing ? 'var(--color-body-bg)' : 'var(--color-white)' }} />
+          </div>
+          <div className="form-group">
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: 'var(--color-text-dark)' }}>Name *</label>
+            <input name="name" type="text" value={form.name} onChange={handleChange} disabled={!isEditing} style={{ width: '100%', padding: '12px 16px', border: '2px solid var(--color-border-medium)', borderRadius: '8px', background: !isEditing ? 'var(--color-body-bg)' : 'var(--color-white)' }} />
+          </div>
+          <div className="form-group">
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: 'var(--color-text-dark)' }}>Skill *</label>
+            <select name="skill" value={form.skill} onChange={handleChange} disabled={!isEditing} style={{ width: '100%', padding: '12px 16px', border: '2px solid var(--color-border-medium)', borderRadius: '8px', background: !isEditing ? 'var(--color-body-bg)' : 'var(--color-white)' }}>
+              {skills.map(s => (<option key={s} value={s}>{s || 'Select skill'}</option>))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: 'var(--color-text-dark)' }}>Region *</label>
+            <select name="region" value={form.region} onChange={handleChange} disabled={!isEditing} style={{ width: '100%', padding: '12px 16px', border: '2px solid var(--color-border-medium)', borderRadius: '8px', background: !isEditing ? 'var(--color-body-bg)' : 'var(--color-white)' }}>
+              {regions.map(r => (<option key={r} value={r}>{r || 'Select region'}</option>))}
+            </select>
+          </div>
+        </div>
+      </form>
+    </motion.div>
+  );
+};
 
 export default TechnicianDashboard; 

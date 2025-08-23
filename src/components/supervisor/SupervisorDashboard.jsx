@@ -19,7 +19,7 @@ import {
 	Trash2
 } from 'lucide-react';
 import Modal from '../Modal';
-import { technicians } from '../technician/TechnicianDashboard';
+import { useAppData } from '../../context/AppDataContext.jsx';
 
 // Shared styles/utilities
 const styles = {
@@ -124,26 +124,9 @@ const SupervisorDashboard = () => {
 		{ id: 7, assetId: 'AST-007', assetName: 'Cooling Tower System', type: 'HVAC', status: 'Not Available', location: 'Building B - North Side', region: 'Central Zone', siteCode: 'BLD-B-007', description: 'Industrial cooling system for temperature regulation', registrationDate: '2024-02-01T00:00:00.000Z' }
 	]);
 	const [expandedMenus, setExpandedMenus] = useState({ assets: true, maintenance: false, workOrder: false, technician: false, reports: false });
-	// Shared work orders across tabs
-	const [workOrders, setWorkOrders] = useState([
-		{ workId: 'WO001', planId: 'PLN-101', scheduledDate: '2025-07-30', status: 'Open', description: 'Fix faulty AC unit in Server Room', requestedBy: 'Bob Smith',maintenancePlan:"Monthly", requestedById: 'USR-001', assignedTo: '', assignedToId: '' },
-		{ workId: 'WO002', planId: 'PLN-102', scheduledDate: '2025-08-05', status: 'Open', description: 'Install new network switch in Office 302', requestedBy: 'David Lee',maintenancePlan:"Weekly", requestedById: 'USR-002', assignedTo: '', assignedToId: '' },
-		{ workId: 'WO003', planId: 'PLN-103', scheduledDate: '2025-07-25', status: 'Open', description: 'Routine maintenance of HVAC system',  requestedBy: 'Eve White',maintenancePlan:"Monthly", requestedById: 'USR-003', assignedTo: '', assignedToId: '' },
-		{ workId: 'WO004', planId: 'PLN-104', scheduledDate: '2025-07-31', status: 'Open', description: 'Troubleshoot printer in HR department', requestedBy: 'Grace Hall',maintenancePlan:"Quarterly", requestedById: 'USR-004', assignedTo: '', assignedToId: '' },
-		{ workId: 'WO005', planId: 'PLN-105', scheduledDate: '2025-08-02', status: 'Open', description: 'Replace broken monitor in Conference Room A', requestedBy: 'Helen Clark',maintenancePlan:"Yearly", requestedById: 'USR-005', assignedTo: '', assignedToId: '' }
-	]);
+	const { technicians, setTechnicians, workOrders, setWorkOrders } = useAppData();
 	const [selectedTechnician, setSelectedTechnician] = useState(null);
-	// Technicians state with localStorage persistence (seeded from default export)
-	const [technicianList, setTechnicianList] = useState(() => {
-		try {
-			const saved = JSON.parse(localStorage.getItem('technicians') || 'null');
-			if (Array.isArray(saved) && saved.length > 0) return saved;
-		} catch {}
-		return technicians;
-	});
-	useEffect(() => {
-		try { localStorage.setItem('technicians', JSON.stringify(technicianList)); } catch {}
-	}, [technicianList]);
+	const [maintenancePlans, setMaintenancePlans] = useState([]);
 
 	useEffect(() => {
 		const t = setTimeout(() => {
@@ -153,25 +136,6 @@ const SupervisorDashboard = () => {
 		}, 50);
 		return () => clearTimeout(t);
 	}, [activeTab]);
-	// Sync work orders from localStorage when other tabs update
-	useEffect(() => {
-		const syncFromStorage = () => {
-			try {
-				const stored = JSON.parse(localStorage.getItem('assignedWorkOrders') || '[]');
-				if (!Array.isArray(stored)) return;
-				setWorkOrders(prev => {
-					const map = new Map(prev.map(o => [o.workId, o]));
-					stored.forEach(s => {
-						const existing = map.get(s.workId) || {};
-						map.set(s.workId, { ...existing, ...s });
-					});
-					return Array.from(map.values());
-				});
-			} catch {}
-		};
-		window.addEventListener('workOrdersUpdated', syncFromStorage);
-		return () => window.removeEventListener('workOrdersUpdated', syncFromStorage);
-	}, []);
 
 	const toggleMenu = (menuKey) => {
 		setExpandedMenus(prev => {
@@ -186,18 +150,14 @@ const SupervisorDashboard = () => {
 
 	const menuItems = [
 		{ key: 'assets', label: 'Assets', icon: Database, items: [ { id: 'asset-registration', label: 'Asset Registration', icon: Plus }, { id: 'search-assets', label: 'Search Assets', icon: Search } ] },
-		{ key: 'maintenance', label: 'Maintenance Plan', icon: Calendar, items: [ /*{ id: 'plan-creation', label: 'Plan Creation', icon: Plus },*/ { id: 'view-plan', label: 'View Plan', icon: FileText }/*, { id: 'update-plan', label: 'Update Plan', icon: Edit } */] },
+		{ key: 'maintenance', label: 'Maintenance Plan', icon: Calendar, items: [ { id: 'view-plan', label: 'View Plan', icon: FileText } ] },
 		{ key: 'workOrder', label: 'Work Order', icon: Clipboard, items: [ { id: 'assign-work', label: 'Assign Work', icon: UserCheck } ] },
 		{ key: 'technician', label: 'Assigned Technician', icon: Users, items: [ { id: 'search-technician', label: 'Search Technician', icon: Search }, { id: 'register-technician', label: 'Register Technician', icon: Plus }, { id: 'view-assignments', label: 'View Assignments', icon: FileText } ] },
 		{ key: 'reports', label: 'Reports', icon: BarChart3, items: [ { id: 'asset-history', label: 'Asset History', icon: FileText }, { id: 'technician-summary', label: 'Technician Summary', icon: TrendingUp } ] }
 	];
 
 	const simpleTabConfig = {
-		//'plan-creation': { icon: Plus, title: 'Plan Creation', lead: 'Create comprehensive maintenance plans for assets', body: { title: 'Maintenance Planning', text: 'Create detailed maintenance schedules and procedures for your assets.' } },
-		'view-plan': { icon: Eye, title: 'View Plans', lead: 'Review and monitor existing maintenance plans', body: { title: 'Plan Overview', text: 'View all maintenance plans, schedules, and upcoming activities.' } },
-		//'update-plan': { icon: Edit, title: 'Update Plans', lead: 'Modify existing maintenance plans and schedules', body: { title: 'Plan Modification', text: 'Update maintenance schedules, procedures, and plan details.' } },
-		// technician group uses functional view for assignments; keep search as simple card
-		// 'search-technician' is implemented as a functional tab below
+		// keep for future simple cards
 	};
 
 	const renderActiveTab = () => {
@@ -208,7 +168,7 @@ const SupervisorDashboard = () => {
 			case 'search-assets':
 				return <SearchAssets registeredAssets={registeredAssets} setRegisteredAssets={setRegisteredAssets} />;
 			case 'assign-work':
-				return <AssignWork workOrders={workOrders} setWorkOrders={setWorkOrders} technicians={technicianList} />;
+				return <AssignWork workOrders={workOrders} setWorkOrders={setWorkOrders} technicians={technicians} setMaintenancePlans={setMaintenancePlans} />;
 			case 'view-assignments':
 				return <ViewAssignments workOrders={workOrders} selectedTechnician={selectedTechnician} onClearFilter={() => setSelectedTechnician(null)} />;
 			case 'asset-history':
@@ -218,7 +178,7 @@ const SupervisorDashboard = () => {
 			case 'search-technician':
 				return (
 					<SearchTechnicians
-						technicians={technicianList}
+						technicians={technicians}
 						onViewAssignments={(tech) => {
 							setSelectedTechnician(tech);
 							setActiveTab('view-assignments');
@@ -226,7 +186,9 @@ const SupervisorDashboard = () => {
 					/>
 				);
 			case 'register-technician':
-				return <RegisterTechnician technicians={technicianList} setTechnicians={setTechnicianList} />;
+				return <RegisterTechnician technicians={technicians} setTechnicians={setTechnicians} />;
+			case 'view-plan':
+				return <MaintenancePlans maintenancePlans={maintenancePlans} />;
 			default:
 				return <AssetRegistration registeredAssets={registeredAssets} setRegisteredAssets={setRegisteredAssets} />;
 		}
@@ -467,30 +429,54 @@ const SearchAssets = ({ registeredAssets, setRegisteredAssets }) => {
 	);
 };
 
-const AssignWork = ({ workOrders, setWorkOrders, technicians }) => {
+const AssignWork = ({ workOrders, setWorkOrders, technicians, setMaintenancePlans }) => {
 	const [pendingAssigneeByWorkId, setPendingAssigneeByWorkId] = useState({});
 	const handleAssigneeSelect = (workId, techName) => {
 		setPendingAssigneeByWorkId(prev => ({ ...prev, [workId]: techName }));
+	};
+	const addDays = (date, days) => {
+		const d = new Date(date);
+		d.setDate(d.getDate() + days);
+		return d;
+	};
+	const computeNextDate = (frequency) => {
+		const base = new Date(); // always from current date
+		switch (frequency) {
+			case 'Weekly': return addDays(base, 7);
+			case 'Monthly': return addDays(base, 30);
+			case 'Quarterly': return addDays(base, 90);
+			case 'Yearly': return addDays(base, 365);
+			default: return addDays(base, 14);
+		}
 	};
 	const handleAssign = (workId) => {
 		const techName = pendingAssigneeByWorkId[workId];
 		if (!techName) return;
 		const tech = technicians.find(t => t.name === techName);
+		let assignedWorkOrder = null;
 		setWorkOrders(list => {
-			const updated = list.map(w => w.workId === workId ? { ...w, assignedTo: techName, assignedToId: tech?.technicianId || '', status: 'Assigned' } : w);
-			try {
-				const existing = JSON.parse(localStorage.getItem('assignedWorkOrders') || '[]');
-				const updatedOrder = updated.find(w => w.workId === workId);
-				if (updatedOrder) {
-					const idx = existing.findIndex(a => a.workId === workId);
-					if (idx >= 0) existing[idx] = updatedOrder; else existing.push(updatedOrder);
-					localStorage.setItem('assignedWorkOrders', JSON.stringify(existing));
+			const updated = list.map(w => {
+				if (w.workId === workId) {
+					assignedWorkOrder = { ...w, assignedTo: techName, assignedToId: tech?.technicianId || '', status: 'Assigned' };
+					return assignedWorkOrder;
 				}
-			} catch {}
+				return w;
+			});
 			return updated;
 		});
+		if (assignedWorkOrder) {
+			const nextDate = computeNextDate(assignedWorkOrder.maintenancePlan);
+			const plan = {
+				planId: `PLN-${Math.floor(100 + Math.random()*900)}`,
+				workOrderId: assignedWorkOrder.workId,
+				technicianName: techName,
+				userName: assignedWorkOrder.requestedBy,
+				frequency: assignedWorkOrder.maintenancePlan,
+				message: `Your maintenance will be done on ${nextDate.toLocaleDateString()}`
+			};
+			setMaintenancePlans(prev => [...prev, plan]);
+		}
 		setPendingAssigneeByWorkId(prev => { const { [workId]: _, ...rest } = prev; return rest; });
-		try { window.dispatchEvent(new CustomEvent('workOrdersUpdated')); } catch {}
 	};
 	return (
 		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
@@ -640,6 +626,39 @@ const TechnicianSummary = ({ workOrders }) => {
 								<div><strong>Total:</strong> {e.total}</div>
 								<div><strong>In Progress:</strong> {e.inProgress}</div>
 								<div><strong>Completed:</strong> {e.done}</div>
+							</div>
+						</div>
+					))}
+				</div>
+			)}
+		</motion.div>
+	);
+};
+
+// Maintenance Plans list
+const MaintenancePlans = ({ maintenancePlans }) => {
+	return (
+		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
+			<h2 style={{ color: 'var(--color-text-dark)' }}>Maintenance Plans</h2>
+			<p style={{ color: 'var(--color-text-medium)', fontSize: '1rem', marginBottom: '20px' }}>Upcoming maintenance based on assignments</p>
+			{maintenancePlans.length === 0 ? (
+				<div style={{ textAlign: 'center', padding: '30px', background: 'var(--color-body-bg)', border: '1px solid var(--color-border-light)', borderRadius: '8px', color: 'var(--color-text-medium)' }}>
+					No plans yet. Assign work to generate a maintenance plan.
+				</div>
+			) : (
+				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+					{maintenancePlans.map((p, idx) => (
+						<div key={`${p.planId}-${idx}`} style={{ background: 'var(--color-white)', border: '1px solid var(--color-border-light)', borderRadius: '8px', padding: '16px' }}>
+							<div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+								<strong style={{ color: 'var(--color-text-dark)' }}>{p.planId}</strong>
+								<span style={{ padding: '4px 8px', borderRadius: '999px', background: 'var(--status-in-progress-bg)', color: 'var(--status-in-progress-text)', fontSize: '12px', fontWeight: 600 }}>Planned</span>
+							</div>
+							<div style={{ fontSize: '13px', color: 'var(--color-text-medium)', display: 'grid', gap: '6px' }}>
+								<div><strong>Work Order:</strong> {p.workOrderId}</div>
+								<div><strong>Technician:</strong> {p.technicianName}</div>
+								<div><strong>User:</strong> {p.userName}</div>
+								<div><strong>Frequency:</strong> {p.frequency}</div>
+								<div style={{ marginTop: '8px', padding: '10px 12px', border: '1px solid var(--color-border-light)', borderRadius: '8px', background: 'var(--color-body-bg)', color: 'var(--color-text-dark)', fontWeight: 700 }}>{p.message}</div>
 							</div>
 						</div>
 					))}

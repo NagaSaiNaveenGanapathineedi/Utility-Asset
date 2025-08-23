@@ -50,9 +50,6 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
 
     const updated = [...assetRequests, newRequest];
     setAssetRequests(updated);
-    try {
-      localStorage.setItem('assetRequests', JSON.stringify(updated));
-    } catch {}
 
     setAssetRequestForm({
       assetId: '',

@@ -105,6 +105,19 @@ const LoginPage = () => {
         permissions: getRolePermissions(userCredential.role)
       };
       
+      // Enrich with technician identifiers and department when applicable
+      if (userCredential.role === 'technician') {
+        userData.technicianId = 'T-009';
+        userData.employeeId = 'T-009';
+        userData.department = 'Maintenance';
+      }
+      if (userCredential.role === 'supervisor') {
+        userData.department = 'Operations';
+      }
+      if (userCredential.role === 'admin') {
+        userData.department = 'Administration';
+      }
+
       login(userData);
       
       // Route to different dashboards based on role
