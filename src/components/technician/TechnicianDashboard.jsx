@@ -588,10 +588,18 @@ const TechnicianProfile = () => {
   const department = user?.department || 'Maintenance';
   const skills = ['', 'HVAC', 'Electrical', 'Network', 'Mechanical', 'Generator', 'Fire Safety'];
   const regions = ['', 'North Zone', 'South Zone', 'East Zone', 'West Zone', 'Central Zone'];
-  const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    const next = name === 'phone' ? value.replace(/\D/g, '') : value;
+    setForm(prev => ({ ...prev, [name]: next }));
+  };
   const handleSave = () => {
     if (!form.name || !form.skill || !form.region || !techId) {
       alert('Please fill all fields');
+      return;
+    }
+    if (!/^\d{7,15}$/.test(form.phone || '')) {
+      alert('Phone must be numbers only (7-15 digits)');
       return;
     }
     setTechnicians(prev => {
