@@ -3,7 +3,7 @@ import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
+
 import UserDashboard from './components/user/UserDashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import SupervisorDashboard from './components/supervisor/SupervisorDashboard';
@@ -114,7 +114,7 @@ export {
   LandingPage,
   LoginPage,
   RegisterPage,
-  ForgotPasswordPage,
+
   UserDashboard,
   AdminDashboard,
   SupervisorDashboard,

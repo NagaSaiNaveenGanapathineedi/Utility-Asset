@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../App';
 import { 
   LogIn, 
@@ -9,7 +9,8 @@ import {
   Eye, 
   EyeOff, 
   AlertCircle, 
-  Shield 
+  Shield, 
+  CheckCircle 
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import TermsContent from '../components/TermsContent';
@@ -17,12 +18,21 @@ import PrivacyContent from '../components/PrivacyContent';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.registeredSuccess) {
+      try { alert('Account created successfully. Please sign in.'); } catch {}
+      // replace state to clear banner on back/refresh
+      navigate('/login', { replace: true, state: { registeredEmail: location.state.registeredEmail } });
+    }
+  }, [location.state]);
   const { login } = useAuth();
   
-  const [formData, setFormData] = useState({
-    email: '',
+  const [formData, setFormData] = useState(() => ({
+    email: (location.state && location.state.registeredEmail) || '',
     password: ''
-  });
+  }));
   
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -77,7 +87,7 @@ const LoginPage = () => {
 
     setLoading(true);
 
-    // Static credentials for different roles
+    // Static credentials for different roles (fallback)
     const validCredentials = {
       'user@gmail.com': { password: 'user123', role: 'user', name: 'Demo User' },
       'admin@gmail.com': { password: 'admin123', role: 'admin', name: 'System Administrator' },
@@ -85,11 +95,29 @@ const LoginPage = () => {
       'technician@gmail.com': { password: 'tech123', role: 'technician', name: 'Field Technician' }
     };
 
-    // Simulate login API call with exact credential matching
+    // Simulate login API call with local users support
     setTimeout(() => {
-      const userCredential = validCredentials[formData.email.toLowerCase()];
-      
-      if (!userCredential || userCredential.password !== formData.password) {
+      const emailKey = (formData.email || '').toLowerCase();
+      // 1) Check locally registered users
+      let userCredential = null;
+      try {
+        const stored = JSON.parse(localStorage.getItem('users') || '[]');
+        const localUsers = Array.isArray(stored) ? stored : [];
+        const found = localUsers.find(u => (u.email || '').toLowerCase() === emailKey);
+        if (found && found.password === formData.password) {
+          userCredential = { ...found, role: 'user', name: found.name || found.firstName || 'User' };
+        }
+      } catch {}
+
+      // 2) Fallback to demo accounts if not found locally
+      if (!userCredential) {
+        const demo = validCredentials[emailKey];
+        if (demo && demo.password === formData.password) {
+          userCredential = { ...demo, email: formData.email };
+        }
+      }
+
+      if (!userCredential) {
         setErrors({ 
           email: 'Invalid email or password. Please check your credentials and try again.' 
         });
@@ -97,35 +125,36 @@ const LoginPage = () => {
         return;
       }
 
+      const role = userCredential.role || 'user';
       const userData = {
         name: userCredential.name,
         email: formData.email,
-        role: userCredential.role,
+        role,
         company: 'Utility Corporation',
-        permissions: getRolePermissions(userCredential.role)
+        permissions: getRolePermissions(role)
       };
       
       // Enrich with technician identifiers and department when applicable
-      if (userCredential.role === 'technician') {
+      if (role === 'technician') {
         userData.technicianId = 'T-009';
         userData.employeeId = 'T-009';
         userData.department = 'Maintenance';
       }
-      if (userCredential.role === 'supervisor') {
+      if (role === 'supervisor') {
         userData.department = 'Operations';
       }
-      if (userCredential.role === 'admin') {
+      if (role === 'admin') {
         userData.department = 'Administration';
       }
 
       login(userData);
       
       // Route to different dashboards based on role
-      if (userCredential.role === 'admin') {
+      if (role === 'admin') {
         navigate('/admin-dashboard');
-      } else if (userCredential.role === 'supervisor') {
+      } else if (role === 'supervisor') {
         navigate('/supervisor-dashboard');
-      } else if (userCredential.role === 'technician') {
+      } else if (role === 'technician') {
         navigate('/technician-dashboard');
       } else {
         navigate('/dashboard');
@@ -240,23 +269,6 @@ const LoginPage = () => {
             </motion.div>
 
             {/* Remember & Forgot Password */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4, duration: 0.4 }}
-              className="flex items-center justify-between"
-              style={{ marginBottom: '32px' }}
-            >
-              <label className="checkbox-group">
-                <input type="checkbox" className="checkbox" />
-                <span className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-                  Remember me
-                </span>
-              </label>
-              <Link to="/forgot-password" className="link text-sm">
-                Forgot password?
-              </Link>
-            </motion.div>
 
             {/* Submit Button */}
             <motion.button

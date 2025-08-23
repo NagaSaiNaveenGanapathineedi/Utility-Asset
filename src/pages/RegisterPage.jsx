@@ -106,17 +106,32 @@ const RegisterPage = () => {
 
     setLoading(true);
 
-    // Simulate registration API call - automatically set role to "user"
+    // Simulate registration API call - save user and redirect to login
     setTimeout(() => {
-      const userData = {
-        name: `${formData.firstName} ${formData.lastName}`,
-        email: formData.email,
-        role: 'user', // Always set to user
-        permissions: getRolePermissions('user')
-      };
-      
-      login(userData);
-      navigate('/dashboard');
+      try {
+        const newUser = {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          name: `${formData.firstName} ${formData.lastName}`.trim(),
+          email: formData.email,
+          password: formData.password
+        };
+        const existing = JSON.parse(localStorage.getItem('users') || '[]');
+        const users = Array.isArray(existing) ? existing : [];
+        const already = users.find(u => (u.email || '').toLowerCase() === newUser.email.toLowerCase());
+        if (already) {
+          setErrors({ email: 'An account with this email already exists. Please login.' });
+          setLoading(false);
+          return;
+        }
+        users.push(newUser);
+        localStorage.setItem('users', JSON.stringify(users));
+        setLoading(false);
+        navigate('/login', { state: { registeredSuccess: true, registeredEmail: newUser.email } });
+      } catch {
+        setErrors({ email: 'Could not save your account locally. Please try again.' });
+        setLoading(false);
+      }
     }, 2000);
   };
 

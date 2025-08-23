@@ -11,7 +11,6 @@ import RootLayout, {
   LandingPage,
   LoginPage,
   RegisterPage,
-  ForgotPasswordPage,
   UserDashboard,
   AdminDashboard,
   SupervisorDashboard,
@@ -40,12 +39,6 @@ const router = createBrowserRouter([
       { path: '/register', element: (
           <RedirectIfAuthenticated>
             <RegisterPage />
-          </RedirectIfAuthenticated>
-        )
-      },
-      { path: '/forgot-password', element: (
-          <RedirectIfAuthenticated>
-            <ForgotPasswordPage />
           </RedirectIfAuthenticated>
         )
       },
