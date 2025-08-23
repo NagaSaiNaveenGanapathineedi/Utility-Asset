@@ -7,73 +7,7 @@ import AssetHistory from './AssetHistory';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('assetInfo');
-  const [assetRequests, setAssetRequests] = useState([
-    {
-      id: 'REQ-001',
-      assetId: 'AST-001',
-      assetName: 'Main Distribution Panel',
-      location: 'Building A - Ground Floor',
-      region: 'North Zone',
-      siteCode: 'BLD-A-001',
-      frequencyPlan: 'Monthly',
-      description: 'Routine check for distribution panel breakers',
-      status: 'Pending',
-      submittedAt: '2025-08-01',
-      submittedBy: 'Demo User'
-    },
-    {
-      id: 'REQ-002',
-      assetId: 'AST-003',
-      assetName: 'Emergency Generator',
-      location: 'Building C - Basement',
-      region: 'South Zone',
-      siteCode: 'BLD-C-003',
-      frequencyPlan: 'Quarterly',
-      description: 'Noise during startup, requires inspection',
-      status: 'Pending',
-      submittedAt: '2025-08-02',
-      submittedBy: 'Demo User'
-    },
-    {
-      id: 'REQ-003',
-      assetId: 'AST-005',
-      assetName: 'Fire Safety System',
-      location: 'Building A - All Floors',
-      region: 'North Zone',
-      siteCode: 'BLD-A-005',
-      frequencyPlan: 'Yearly',
-      description: 'Annual compliance testing',
-      status: 'Pending',
-      submittedAt: '2025-08-03',
-      submittedBy: 'Demo User'
-    },
-    {
-      id: 'REQ-004',
-      assetId: 'AST-006',
-      assetName: 'Transformer Unit T-101',
-      location: 'Substation A - East Wing',
-      region: 'West Zone',
-      siteCode: 'SUB-A-006',
-      frequencyPlan: 'Monthly',
-      description: 'Temperature monitoring irregularity',
-      status: 'Pending',
-      submittedAt: '2025-08-04',
-      submittedBy: 'Demo User'
-    },
-    {
-      id: 'REQ-005',
-      assetId: 'AST-007',
-      assetName: 'Cooling Tower System',
-      location: 'Building B - North Side',
-      region: 'Central Zone',
-      siteCode: 'BLD-B-007',
-      frequencyPlan: 'Monthly',
-      description: 'Vibration detected in fan assembly',
-      status: 'Pending',
-      submittedAt: '2025-08-05',
-      submittedBy: 'Demo User'
-    }
-  ]);
+  const [assetRequests, setAssetRequests] = useState([]);
   const [assetRequestForm, setAssetRequestForm] = useState({
     assetId: '',
     assetName: '',

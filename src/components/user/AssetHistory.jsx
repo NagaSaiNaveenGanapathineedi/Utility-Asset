@@ -188,7 +188,7 @@ const AssetHistory = ({ assetRequests }) => {
         )}
       </div>
 
-      {/* User Past Asset Records - Show below */}
+      {/* User Past Asset Records - Only section */}
       <div>
         <h3 style={{ 
           marginBottom: '20px', 
