@@ -1,41 +1,32 @@
 import { motion } from 'framer-motion';
 import { FileText } from 'lucide-react';
+import { useMemo } from 'react';
 
-const AssetHistory = ({ assetRequests }) => {
-  const getUserPastAssetRecords = () => [
-    {
-      id: 'AST-004',
-      name: 'Water Pump System',
-      location: 'Building D - Utility Room',
-      status: 'Completed',
-      requestedDate: '2023-11-15',
-      completedDate: '2023-12-15',
-      assignedTo: 'Demo User'
-    },
-    {
-      id: 'AST-005',
-      name: 'Fire Safety System',
-      location: 'Building A - All Floors', 
-      status: 'Completed',
-      requestedDate: '2023-11-20',
-      completedDate: '2023-12-20',
-      assignedTo: 'Demo User'
-    },
-    {
-      id: 'AST-007',
-      name: 'Cooling Tower System',
-      location: 'Building B - North Side',
-      status: 'In Progress',
-      requestedDate: '2023-10-10',
-      completedDate: '2024-01-15',
-      assignedTo: 'Demo User'
-    }
-  ];
+const getFrequencyString = (days) => {
+  switch (days) {
+    case 30:
+      return 'Monthly';
+    case 90:
+      return 'Quarterly';
+    case 365:
+      return 'Yearly';
+    default:
+      return days ? `${days} days` : 'N/A';
+  }
+};
 
-  const filteredRequests = (assetRequests || []).filter(r => {
-    const name = (r.assetName || '').trim();
-    return name !== 'SOFSOUDIF' && name !== 'DSADFDSA';
-  });
+const AssetHistory = ({ userHistory }) => {
+  const records = userHistory || [];
+  console.log(userHistory);
+  const presentRecords = useMemo(() => 
+    records.filter(r => r.status === 'Not Assigned'),
+    [records]
+  );
+
+  const pastRecords = useMemo(() => 
+    records.filter(r => r.status !== 'Not Assigned'),
+    [records]
+  );
 
   return (
     <motion.div
@@ -63,7 +54,7 @@ const AssetHistory = ({ assetRequests }) => {
         }}>
           Your Asset Requests
         </h3>
-        {filteredRequests.length === 0 ? (
+        {presentRecords.length === 0 ? (
           <div style={{ 
             textAlign: 'center',
             padding: '40px',
@@ -78,13 +69,13 @@ const AssetHistory = ({ assetRequests }) => {
               fontWeight: '400',
               color: 'var(--color-text-medium)'
             }}>
-              No asset requests found. Submit your first request using the Asset Request tab.
+              No active asset requests found.
             </p>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '15px' }}>
-            {filteredRequests.map((request) => (
-              <div key={request.id} style={{
+            {presentRecords.map((request) => (
+              <div key={request.workId} style={{
                 background: 'var(--color-white)',
                 border: '1px solid var(--color-border-light)',
                 borderRadius: '8px',
@@ -93,6 +84,7 @@ const AssetHistory = ({ assetRequests }) => {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
               }}>
                 <div style={{ width: '100%' }}>
+                  {/* For asset name and status */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                     <h4 style={{ 
                       margin: '0', 
@@ -100,7 +92,7 @@ const AssetHistory = ({ assetRequests }) => {
                       fontWeight: '600',
                       color: 'var(--color-text-dark)'
                     }}>
-                      {request.assetName}
+                      {request.assetId?.name || 'N/A'}
                     </h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{
@@ -123,13 +115,12 @@ const AssetHistory = ({ assetRequests }) => {
                     gap: '12px' 
                   }}>
                     {[
-                      { label: 'Asset ID', value: request.assetId },
-                      { label: 'Location', value: request.location },
-                      { label: 'Region', value: request.region },
-                      { label: 'Site Code', value: request.siteCode },
-                      { label: 'Frequency Plan', value: request.frequencyPlan },
-                      { label: 'Submitted', value: request.submittedAt },
-                      { label: 'Submitted By', value: request.submittedBy }
+                      { label: 'Asset ID', value: `AST-${request.assetId?.id}` || 'N/A' },
+                      { label: 'Frequency Plan', value: getFrequencyString(request.frequency) || 'N/A' },
+                      { label: 'Status', value: request.status || 'N/A' },
+                      { label: 'Submitted', value: request.requestedDate || 'N/A' },
+                      { label: 'Submitted By', value: request.userId?.name || 'N/A' },
+                      { label: 'Due Date', value: request.planId?.nextMaintenanceDate || 'N/A' }
                     ].map(({ label, value }) => (
                       <div key={label}>
                         <span style={{ 
@@ -154,7 +145,7 @@ const AssetHistory = ({ assetRequests }) => {
                     ))}
                   </div>
                   
-                  {request.description && (
+                  {request.desc && (
                     <div style={{ 
                       marginTop: '12px', 
                       paddingTop: '12px', 
@@ -177,7 +168,7 @@ const AssetHistory = ({ assetRequests }) => {
                         color: 'var(--color-text-dark)',
                         lineHeight: '1.4'
                       }}>
-                        {request.description}
+                        {request.desc}
                       </p>
                     </div>
                   )}
@@ -198,9 +189,28 @@ const AssetHistory = ({ assetRequests }) => {
         }}>
           Your Past Asset Records
         </h3>
+        {pastRecords.length === 0 ? (
+           <div style={{ 
+            textAlign: 'center',
+            padding: '40px',
+            background: 'var(--color-white)',
+            border: '1px solid var(--color-border-light)',
+            borderRadius: '8px'
+          }}>
+            <FileText size={48} style={{ marginBottom: '16px', color: 'var(--color-text-medium)' }} />
+            <p style={{ 
+              margin: '0', 
+              fontSize: '1rem',
+              fontWeight: '400',
+              color: 'var(--color-text-medium)'
+            }}>
+              No past asset records found.
+            </p>
+          </div>
+        ) : (
         <div style={{ display: 'grid', gap: '15px' }}>
-          {getUserPastAssetRecords().map((asset) => (
-            <div key={asset.id} style={{
+          {pastRecords.map((asset) => (
+            <div key={asset.workId} style={{
               background: 'var(--color-white)',
               border: '1px solid var(--color-border-light)',
               borderRadius: '8px',
@@ -215,12 +225,12 @@ const AssetHistory = ({ assetRequests }) => {
                     fontWeight: '600',
                     color: 'var(--color-text-dark)'
                   }}>
-                    {asset.name}
+                    {asset.assetId?.name || 'N/A'}
                   </h4>
                   <span style={{
                     padding: '4px 8px',
-                    background: asset.status === 'Completed' ? 'var(--status-completed-bg)' : 'var(--color-border-light)',
-                    color: asset.status === 'Completed' ? 'var(--status-completed-text)' : 'var(--color-text-medium)',
+                    background: asset.status === 'Done' ? 'var(--status-completed-bg)' : 'var(--color-border-light)',
+                    color: asset.status === 'Done' ? 'var(--status-completed-text)' : 'var(--color-text-medium)',
                     borderRadius: '4px',
                     fontSize: '11px',
                     fontWeight: '500',
@@ -237,11 +247,12 @@ const AssetHistory = ({ assetRequests }) => {
                   gap: '12px' 
                 }}>
                   {[
-                    { label: 'Asset ID', value: asset.id },
-                    { label: 'Location', value: asset.location },
-                    { label: 'Status', value: asset.status },
-                    { label: 'Requested Date', value: asset.requestedDate },
-                    { label: 'Completed Date', value: asset.completedDate }
+                    { label: 'Asset Name', value: `AST-${asset.assetId?.name}` || 'N/A' },
+                    { label: 'Asset Type', value: asset.assetId?.type || 'N/A' },
+                    { label: 'Status', value: asset.status || 'N/A' },
+                    { label: 'Requested Date', value: asset.requestedDate || 'N/A' },
+                    { label: 'Technician', value: asset.techId?.name || 'N/A' },
+                    { label: 'Maintenance Date', value: asset.planId?.nextMaintenanceDate || 'N/A' },
                   ].map(({ label, value }) => (
                     <div key={label}>
                       <span style={{ 
@@ -269,6 +280,7 @@ const AssetHistory = ({ assetRequests }) => {
             </div>
           ))}
         </div>
+        )}
       </div>
     </motion.div>
   );

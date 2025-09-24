@@ -4,19 +4,34 @@ import UserHeader from './UserHeader';
 import AssetInfo from './AssetInfo';
 import AssetRequestForm from './AssetRequestForm';
 import AssetHistory from './AssetHistory';
+import axios from 'axios';
 
 const UserDashboard = () => {
-  const [activeTab, setActiveTab] = useState('assetInfo');
-  const [assetRequests, setAssetRequests] = useState([]);
-  const [assetRequestForm, setAssetRequestForm] = useState({
-    assetId: '',
-    assetName: '',
-    location: '',
-    region: '',
-    siteCode: '',
-    frequencyPlan: '',
-    description: ''
+  const [user,setUser] = useState({
+    id:1,
+    name:"Ravi Kumar",
+    email:"ravi@example.com",
+    password:"pass123",
+    phno:"9876543210",
+    region:"South",
+    pincode:"600001",
+    location:"Chennai",
+    skill:"Inspection",
+    role:"User"
   });
+  const [assets,setAssets] = useState([]);
+  const [activeTab, setActiveTab] = useState('assetInfo');
+  const [workorder, setWorkOrder] = useState({
+    planId : null,
+    userId : null,
+    techId : null,
+    assetId : null,
+    description : null,
+    requestedDate : null,
+    status : "Not Assigned",
+    frequency : null
+  });
+  const [userHistory, setuserHistory] = useState([]);
 
   // Scroll to top when tab changes
   useEffect(() => {
@@ -41,10 +56,36 @@ const UserDashboard = () => {
         top: 0,
         behavior: 'smooth'
       });
-    }, 50);
+    });
 
+    const fetchAssets = async () => {
+      try {
+        const response = await axios.get("http://localhost:9092/asset/all");
+        if (!response) throw new Error("Unable to fetch the data");
+        setAssets(response.data);
+      } catch (error) {
+        console.error("Error fetching assets:", error);
+        // Optionally show a user-friendly message
+      }
+    };
+
+    const fetchHistory = async () => {
+      try {
+        const response = await axios.get("http://localhost:9092/workorder/user/"+user.id);
+        if (!response) throw new Error("Unable to fetch the data");
+        setuserHistory(response.data);
+        // console.log(userHistory);
+      } catch (error) {
+        console.error("Error fetching assets:", error);
+        // Optionally show a user-friendly message
+      }
+    };
+
+    fetchAssets();
+    fetchHistory();
     return () => clearTimeout(scrollTimer);
-  }, [activeTab]);
+
+  }, []); {/*activeTab*/}
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -53,18 +94,17 @@ const UserDashboard = () => {
   const renderActiveTab = () => {
     switch (activeTab) {
       case 'assetInfo':
-        return <AssetInfo />;
+        return <AssetInfo assets={assets}/>;
       case 'assetRequest':
         return (
           <AssetRequestForm
-            assetRequests={assetRequests}
-            setAssetRequests={setAssetRequests}
-            assetRequestForm={assetRequestForm}
-            setAssetRequestForm={setAssetRequestForm}
+            assets = {assets}
+            workorder={workorder}
+            setWorkOrder={setWorkOrder}
           />
         );
       case 'assetHistory':
-        return <AssetHistory assetRequests={assetRequests} setAssetRequests={setAssetRequests} />;
+        return <AssetHistory userHistory={userHistory} />;
       default:
         return <AssetInfo />;
     }
