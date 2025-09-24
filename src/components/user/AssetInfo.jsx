@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
-import { assetsData } from '../../data/assets';
+//import { assetsData } from '../../data/assets';
 
-const AssetInfo = () => {
+const AssetInfo = ({assets}) => {
+  //console.log(assets);
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -23,10 +24,10 @@ const AssetInfo = () => {
         gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
         gap: '20px' 
       }}>
-        {assetsData.map((asset) => {
+        {assets.map((asset) => {
           return (
             <div
-              key={asset.assetId}
+              key={asset.id}
               style={{
                 background: 'var(--color-white)',
                 border: '1px solid var(--color-border-light)',
@@ -52,14 +53,14 @@ const AssetInfo = () => {
                   fontWeight: '600',
                   color: 'var(--color-text-dark)'
                 }}>
-                  {asset.assetName}
+                  {asset.name}
                 </h3>
               </div>
               
               {[
-                { label: 'Asset ID', value: asset.assetId },
-                { label: 'Location', value: asset.location },
-                { label: 'Region', value: asset.region },
+                { label: 'Asset ID', value: 'AST-'+asset.id },
+                { label: 'Type', value: asset.type },
+                { label: 'Description', value: asset.description },
                 { label: 'Site Code', value: asset.siteCode }
               ].map(({ label, value }) => (
                 <div key={label} style={{ marginBottom: '8px', width: '100%' }}>

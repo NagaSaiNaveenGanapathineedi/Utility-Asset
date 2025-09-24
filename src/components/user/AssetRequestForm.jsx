@@ -1,90 +1,113 @@
 import { motion } from 'framer-motion';
-import { useState, useMemo, useRef } from 'react';
-import { assetsData } from '../../data/assets';
+import { useState, useMemo, useCallback } from 'react';
+import axios from 'axios';
 
-const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, setAssetRequestForm }) => {
+// Moved styles outside to prevent recreation on every render
+const inputStyle = {
+  width: '100%',
+  padding: '12px 16px',
+  border: '2px solid var(--color-border-medium)',
+  borderRadius: '8px',
+  fontSize: '14px',
+  fontWeight: '400',
+  color: 'var(--color-text-dark)',
+  backgroundColor: 'var(--color-white)',
+  transition: 'all 0.2s ease',
+  fontFamily: 'inherit',
+  outline: 'none'
+};
+
+const labelStyle = {
+  display: 'block',
+  marginBottom: '8px',
+  fontSize: '14px',
+  fontWeight: '500',
+  color: 'var(--color-text-dark)'
+};
+
+const initialFilteredAssetState = {
+  id: null,
+  name: null,
+  description: null,
+  count: null,
+  regDate: null,
+  siteCode: null,
+  type: null
+};
+
+const AssetRequestForm = ({ assets, workorder, setWorkOrder }) => {
+  const [filteredAsset, setFilteredAsset] = useState(initialFilteredAssetState);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const suggestionsRef = useRef(null);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
-    setAssetRequestForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+    if (name === "description" || name === "frequency") {
+      setWorkOrder(prev => ({
+        ...prev,
+        [name]: name === 'frequency' ? parseInt(value, 10) || '' : value
+      }));
+    } else {
+      setFilteredAsset(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  }, [setWorkOrder, setFilteredAsset]);
 
-  const handleSelectAsset = (asset) => {
-    setAssetRequestForm(prev => ({
-      ...prev,
-      assetId: asset.assetId,
-      assetName: asset.assetName,
-      location: asset.location,
-      region: asset.region,
-      siteCode: asset.siteCode
-    }));
+  const handleSelectAsset = useCallback((asset) => {
+    setFilteredAsset(asset);
+    setWorkOrder({
+      ...workorder,
+      assetId: asset.id,
+      userId: 1,
+      frequency: parseInt(asset.frequency, 10),
+      requestedDate: new Date().toLocaleDateString('en-CA'),
+      status: "Not Assigned"
+    });
     setShowSuggestions(false);
-  };
+  }, [workorder, setWorkOrder]);
 
   const filteredSuggestions = useMemo(() => {
-    const query = (assetRequestForm.assetName || '').trim().toLowerCase();
+    const query = (filteredAsset.name || '').trim().toLowerCase();
     if (!query) return [];
-    return assetsData.filter(a => a.assetName.toLowerCase().includes(query)).slice(0, 8);
-  }, [assetRequestForm.assetName]);
+    return assets.filter(a => a.name.toLowerCase().includes(query)).slice(0, 8);
+  }, [filteredAsset.name, assets]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
+    console.log(filteredAsset);
+    console.log(workorder);
 
-    if (!assetRequestForm.assetId || !assetRequestForm.assetName || !assetRequestForm.location || !assetRequestForm.region || !assetRequestForm.siteCode || !assetRequestForm.frequencyPlan) {
-      alert('Please select an asset from suggestions and fill required fields');
+    if (!workorder.assetId || !workorder.frequency) {
+      alert('Please select an asset and a frequency plan.');
       return;
     }
 
-    const newRequest = {
-      id: Date.now().toString(),
-      ...assetRequestForm,
-      status: 'Pending',
-      submittedAt: new Date().toLocaleDateString(),
-      submittedBy: 'Demo User'
-    };
-
-    const updated = [...assetRequests, newRequest];
-    setAssetRequests(updated);
-
-    setAssetRequestForm({
-      assetId: '',
-      assetName: '',
-      location: '',
-      region: '',
-      siteCode: '',
-      frequencyPlan: '',
-      description: ''
-    });
-
-    alert('Asset request submitted successfully!');
-  };
-
-  const inputStyle = {
-    width: '100%',
-    padding: '12px 16px',
-    border: '2px solid var(--color-border-medium)',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '400',
-    color: 'var(--color-text-dark)',
-    backgroundColor: 'var(--color-white)',
-    transition: 'all 0.2s ease',
-    fontFamily: 'inherit',
-    outline: 'none'
-  };
-
-  const labelStyle = {
-    display: 'block',
-    marginBottom: '8px',
-    fontSize: '14px',
-    fontWeight: '500',
-    color: 'var(--color-text-dark)'
-  };
+    try {
+      const requestPayload = { ...workorder };
+      console.log(requestPayload);
+      const response = await axios.post('http://localhost:9092/workorder/save', requestPayload);
+      if (response.status === 200 || response.status === 201) {
+        alert('Asset request submitted successfully!');
+        setWorkOrder({
+          planId: null,
+          userId: null,
+          techId: null,
+          assetId: null,
+          description: null,
+          requestedDate: null,
+          status: "Not Assigned",
+          frequency: null
+        });
+        setFilteredAsset(initialFilteredAssetState);
+      } else {
+        alert('Failed to submit asset request.');
+      }
+    } catch (error) {
+      console.error("Error submitting asset request:", error);
+      alert('An error occurred while submitting the request.');
+    }
+  }, [workorder, setWorkOrder, setFilteredAsset]);
 
   return (
     <motion.div
@@ -94,7 +117,7 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
       className="card"
     >
       <h2 style={{ color: 'var(--color-text-dark)' }}>Asset Request</h2>
-      <p style={{ 
+      <p style={{
         color: 'var(--color-text-medium)',
         fontSize: '1rem',
         marginBottom: '30px'
@@ -103,9 +126,9 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
       </p>
 
       <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
           gap: '20px',
           marginBottom: '20px'
         }}>
@@ -116,21 +139,18 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
             </label>
             <input
               type="text"
-              name="assetName"
-              value={assetRequestForm.assetName}
+              name="name"
+              value={filteredAsset.name || ''}
               onChange={(e) => { handleInputChange(e); setShowSuggestions(true); }}
               placeholder="Type to search and select asset name"
               style={inputStyle}
               onFocus={() => setShowSuggestions(true)}
-              onBlur={(e) => {
-                // Delay to allow click on suggestion
-                requestAnimationFrame(() => setShowSuggestions(false));
-              }}
+              onBlur={() => { setTimeout(() => setShowSuggestions(false), 150); }}
+              autoComplete="off"
               required
             />
             {showSuggestions && filteredSuggestions.length > 0 && (
               <div
-                ref={suggestionsRef}
                 style={{
                   position: 'absolute',
                   top: '100%',
@@ -148,7 +168,7 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
               >
                 {filteredSuggestions.map((a) => (
                   <button
-                    key={a.assetId}
+                    key={a.id}
                     type="button"
                     onMouseDown={(e) => { e.preventDefault(); handleSelectAsset(a); }}
                     style={{
@@ -163,7 +183,7 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
                       gap: '4px'
                     }}
                   >
-                    <span style={{ color: 'var(--color-text-dark)', fontWeight: 600 }}>{a.assetName}</span>
+                    <span style={{ color: 'var(--color-text-dark)', fontWeight: 600 }}>{a.name}</span>
                     <span style={{ color: 'var(--color-text-medium)', fontSize: '12px' }}>{a.assetId} • {a.location}</span>
                   </button>
                 ))}
@@ -179,8 +199,7 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
             <input
               type="text"
               name="assetId"
-              value={assetRequestForm.assetId}
-              onChange={handleInputChange}
+              value={filteredAsset.id ? "AST-" + filteredAsset.id : ''}
               placeholder="Auto-filled after selecting asset"
               style={{ ...inputStyle, backgroundColor: 'var(--color-body-bg)' }}
               readOnly
@@ -188,34 +207,18 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
             />
           </div>
 
-          {/* Location */}
+          {/* Type */}
           <div>
             <label style={labelStyle}>
-              Location *
+              Type *
             </label>
             <input
               type="text"
-              name="location"
-              value={assetRequestForm.location}
-              onChange={handleInputChange}
+              name="type"
+              value={filteredAsset.type || ''}
               placeholder="Auto-filled after selecting asset"
-              style={inputStyle}
-              required
-            />
-          </div>
-
-          {/* Region */}
-          <div>
-            <label style={labelStyle}>
-              Region *
-            </label>
-            <input
-              type="text"
-              name="region"
-              value={assetRequestForm.region}
-              onChange={handleInputChange}
-              placeholder="Auto-filled after selecting asset"
-              style={inputStyle}
+              style={{ ...inputStyle, backgroundColor: 'var(--color-body-bg)' }}
+              readOnly
               required
             />
           </div>
@@ -228,10 +231,26 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
             <input
               type="text"
               name="siteCode"
-              value={assetRequestForm.siteCode}
-              onChange={handleInputChange}
+              value={filteredAsset.siteCode || ''}
               placeholder="Auto-filled after selecting asset"
-              style={inputStyle}
+              style={{ ...inputStyle, backgroundColor: 'var(--color-body-bg)' }}
+              readOnly
+              required
+            />
+          </div>
+
+          {/* Requested Date */}
+          <div>
+            <label style={labelStyle}>
+              Requested Date *
+            </label>
+            <input
+              type="text"
+              name="requestedDate"
+              value={workorder.requestedDate || new Date().toLocaleDateString('en-CA')}
+              placeholder="Auto-filled after selecting asset"
+              style={{ ...inputStyle, backgroundColor: 'var(--color-body-bg)' }}
+              readOnly
               required
             />
           </div>
@@ -242,16 +261,16 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
               Frequency Plan *
             </label>
             <select
-              name="frequencyPlan"
-              value={assetRequestForm.frequencyPlan}
+              name="frequency"
+              value={workorder.frequency || ''}
               onChange={handleInputChange}
               style={inputStyle}
               required
             >
               <option value="">Select frequency</option>
-              <option value="Monthly">Monthly</option>
-              <option value="Quarterly">Quarterly</option>
-              <option value="Yearly">Yearly</option>
+              <option value={30}>Monthly</option>
+              <option value={90}>Quarterly</option>
+              <option value={365}>Yearly</option>
             </select>
           </div>
         </div>
@@ -263,7 +282,7 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
           </label>
           <textarea
             name="description"
-            value={assetRequestForm.description}
+            value={workorder.description || ''}
             onChange={handleInputChange}
             placeholder="Enter additional details or special instructions"
             style={{
@@ -297,4 +316,5 @@ const AssetRequestForm = ({ assetRequests, setAssetRequests, assetRequestForm, s
   );
 };
 
-export default AssetRequestForm; 
+export default AssetRequestForm;
+ 
