@@ -85,7 +85,7 @@ const UserDashboard = () => {
     fetchHistory();
     return () => clearTimeout(scrollTimer);
 
-  }, []); {/*activeTab*/}
+  }, [activeTab]); {/*activeTab*/}
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
