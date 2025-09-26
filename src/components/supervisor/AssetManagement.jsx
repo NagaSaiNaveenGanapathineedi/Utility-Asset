@@ -89,7 +89,8 @@ export const SearchAssets = ({ registeredAssets, setRegisteredAssets }) => {
 		const { name, value } = e.target;
 		setEditForm(prev => ({ ...prev, [name]: value }));
 	};
-	const handleSaveEdit = (e) => {
+
+	const handleSaveEdit = async(e) => {
 		e?.preventDefault?.();
 		if (!editingAsset) return;
 		if (!editForm.assetId || !editForm.assetName || !editForm.type || !editForm.location || !editForm.region || !editForm.siteCode) {
