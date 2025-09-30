@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
+import { ASSET_FIELDS, cardStyle } from './styles';
 
-const AssetInfo = ({assets}) => {
-  //console.log(assets);
+const AssetInfo = ({ assets = [] }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -23,45 +23,33 @@ const AssetInfo = ({assets}) => {
         gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
         gap: '20px' 
       }}>
-        {assets.map((asset) => {
-          return (
-            <div
-              key={asset.id}
-              style={{
-                background: 'var(--color-white)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '8px',
-                padding: '20px',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                <h3 style={{ 
-                  margin: '0', 
-                  fontSize: '1.1rem',
-                  fontWeight: '600',
-                  color: 'var(--color-text-dark)'
-                }}>
-                  {asset.name}
-                </h3>
-              </div>
-              
-              {[
-                { label: 'Asset ID', value: 'AST-'+asset.id },
-                { label: 'Type', value: asset.type },
-                { label: 'Description', value: asset.description },
-                { label: 'Site Code', value: asset.siteCode }
-              ].map(({ label, value }) => (
+        {assets.map((asset) => (
+          <div
+            key={asset.id}
+            style={cardStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+              <h3 style={{ 
+                margin: '0', 
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                color: 'var(--color-text-dark)'
+              }}>
+                {asset.name || 'Unknown Asset'}
+              </h3>
+            </div>
+            
+            {ASSET_FIELDS.map(({ label, key, prefix }) => {
+              const value = prefix ? `${prefix}${asset[key] || ''}` : (asset[key] || 'N/A');
+              return (
                 <div key={label} style={{ marginBottom: '8px', width: '100%' }}>
                   <span style={{ 
                     fontSize: '11px',
@@ -82,10 +70,10 @@ const AssetInfo = ({assets}) => {
                     {value}
                   </span>
                 </div>
-              ))}
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        ))}
       </div>
     </motion.div>
   );

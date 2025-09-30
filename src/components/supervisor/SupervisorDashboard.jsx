@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import SupervisorHeader from './SupervisorHeader';
+import LoadingSpinner from './LoadingSpinner';
 import {
 	ChevronDown,
 	ChevronRight,
@@ -22,126 +23,84 @@ import { AssignWork } from './AssignWork';
 import { ViewAssignments, RegisterTechnician, SearchTechnicians } from './TechnicianManagement';
 import { AssetHistory, TechnicianSummary } from './Reports';
 
-export const SimpleCard = ({ icon: Icon, title, lead, body }) => (
-	<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
-		<h2 style={{ color: 'var(--color-text-dark)' }}>{title}</h2>
-		<p style={{ color: 'var(--color-text-medium)', fontSize: '1rem', marginBottom: '30px' }}>{lead}</p>
-		<div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-medium)', backgroundColor: 'var(--color-body-bg)', borderRadius: '8px' }}>
-			<Icon size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
-			<h3 style={{ color: 'var(--color-text-dark)', marginBottom: '8px' }}>{body.title}</h3>
-			<p>{body.text}</p>
-		</div>
-	</motion.div>
-);
+
 
 const SupervisorDashboard = () => {
-	const [activeTab, setActiveTab] = useState('asset-history');
+	const [activeTab, setActiveTab] = useState('search-assets');
 	const [assets, setAssets] = useState([]);
 	const [technicians, setTechnicians] = useState([]);
 	const [workOrders, setWorkOrders] = useState([]);
-	const [expandedMenus, setExpandedMenus] = useState({ assets: false, maintenance: false, workOrder: false, technician: true, reports: false });
-	const [plans, setplans] = useState([]);
+	const [expandedMenus, setExpandedMenus] = useState({ assets: true });
+	const [plans, setPlans] = useState([]);
+	const [dataVersion, setDataVersion] = useState(0);
+	const [loading, setLoading] = useState(false);
+
+	const fetchData = useCallback(async () => {
+		setLoading(true);
+		try {
+			const [assetsRes, techniciansRes, workOrdersRes, plansRes] = await Promise.all([
+				axios.get("http://localhost:9092/asset/all"),
+				axios.get("http://localhost:9092/user/role/technician"),
+				axios.get("http://localhost:9092/workorder/all"),
+				axios.get("http://localhost:9092/maintenanceplan/all")
+			]);
+			
+			setAssets(assetsRes.data);
+			setTechnicians(techniciansRes.data);
+			setWorkOrders(workOrdersRes.data);
+			setPlans(plansRes.data);
+		} catch (error) {
+			console.error("Error fetching data:", error);
+		} finally {
+			setLoading(false);
+		}
+	}, []);
 
 	useEffect(() => {
+		fetchData();
+	}, [fetchData, dataVersion]);
 
-		const fetchAssets = async () => {
-			try {
-				const response = await axios.get("http://localhost:9092/asset/all");
-				if (!response.status === 200) {
-					throw new Error(`HTTP error! status: ${response.status}`);
-				}
-				setAssets(response.data);
-			} catch (error) {
-				console.error("Error fetching assets:", error);
-			}
-		};
-
-		const fetchTechnicians = async () => {
-			try {
-				const response = await axios.get("http://localhost:9092/user/role/"+"technician");
-				if (!response.status === 200) {
-					throw new Error(`HTTP error! status: ${response.status}`);
-				}
-				setTechnicians(response.data);
-			} catch (error) {
-				console.error("Error fetching technicians:", error);
-			}
-		};
-
-		const fetchWorkOrders = async () => {
-			try {
-				const response = await axios.get("http://localhost:9092/workorder/all");
-				if (!response.status === 200) {
-					throw new Error(`HTTP error! status: ${response.status}`);
-				}
-				setWorkOrders(response.data);
-			} catch (error) {
-				console.error("Error fetching work orders:", error);
-			}
-		};
-
-		const fetchPlans = async () =>{
-			try {
-				const response = await axios.get("http://localhost:9092/maintenanceplan/all");
-				if (!response.status === 200) {
-					throw new Error(`HTTP error! status: ${response.status}`);
-				}
-				setplans(response.data);
-			} catch (error) {
-				console.error("Error fetching Plans:", error);
-			}
-		}
-
-		fetchTechnicians();
-		fetchWorkOrders();
-		fetchAssets();
-		fetchPlans();
-
-	}, [activeTab]);
-
-	const toggleMenu = (menuKey) => {
+	const toggleMenu = useCallback((menuKey) => {
 		setExpandedMenus(prev => {
-			const isOpen = prev[menuKey];
-			if (isOpen) return { ...prev, [menuKey]: false };
-			const next = {};
-			Object.keys(prev).forEach(k => { next[k] = k === menuKey; });
-			return next;
+			const isCurrentlyOpen = prev[menuKey];
+			if (isCurrentlyOpen) {
+				return { [menuKey]: false };
+			}
+			return { [menuKey]: true };
 		});
-	};
-	const handleTabChange = (tabId) => setActiveTab(tabId);
+	}, []);
 
-	const menuItems = [
-		{ key: 'assets', label: 'Assets', icon: Database, items: [ { id: 'asset-registration', label: 'Asset Registration', icon: Plus }, { id: 'search-assets', label: 'Search Assets', icon: Search } ] },
+	const handleTabChange = useCallback((tabId) => setActiveTab(tabId), []);
+
+	const handleDataChange = useCallback(() => {
+		setDataVersion(prev => prev + 1);
+	}, []);
+
+	const menuItems = useMemo(() => [
+		{ key: 'assets', label: 'Assets', icon: Database, items: [ { id: 'search-assets', label: 'Search Assets', icon: Search }, { id: 'asset-registration', label: 'Register Asset', icon: Plus } ] },
 		{ key: 'maintenance', label: 'Maintenance Plan', icon: Calendar, items: [ { id: 'maintenance-plan', label: 'View Plan', icon: FileText } ] },
 		{ key: 'workOrder', label: 'Work Order', icon: Clipboard, items: [ { id: 'assign-work', label: 'Assign Work', icon: UserCheck } ] },
 		{ key: 'technician', label: 'Assigned Technician', icon: Users, items: [ { id: 'search-technician', label: 'Search Technician', icon: Search }, { id: 'view-assignments', label: 'View Assignments', icon: FileText }, { id: 'register-technician', label: 'Register Technician', icon: Plus } ] },
 		{ key: 'reports', label: 'Reports', icon: BarChart3, items: [ { id: 'asset-history', label: 'Asset History', icon: FileText }, { id: 'technician-summary', label: 'Technician Summary', icon: TrendingUp } ] }
-	];
+	], []);
 
-	const renderActiveTab = () => {
-		switch (activeTab) {
-			case 'asset-registration':
-				return <AssetRegistration handleTabChange={handleTabChange} />;
-			case 'search-assets':
-				return <SearchAssets assets={assets} handleTabChange={handleTabChange} />;
-			case 'assign-work':
-				return <AssignWork workOrders={workOrders} technicians={technicians} handleTabChange={handleTabChange} />;
-			case 'view-assignments':
-				return <ViewAssignments workOrders={workOrders} />;
-			case 'asset-history':
-				return <AssetHistory workOrders={workOrders} handleTabChange={handleTabChange} />;
-			case 'technician-summary':
-				return <TechnicianSummary workOrders={workOrders} handleTabChange={handleTabChange} />;
-			case 'search-technician':
-				return <SearchTechnicians technicians={technicians} handleTabChange={handleTabChange} />;
-			case 'register-technician':
-				return <RegisterTechnician handleTabChange={handleTabChange} />;
-			case 'maintenance-plan':
-				return <MaintenancePlan plans={plans} handleTabChange={handleTabChange} />;
-			default:
-				return <SearchAssets assets={assets} handleTabChange={handleTabChange} />;
-		}
-	};
+	const renderActiveTab = useMemo(() => {
+		if (loading) return <LoadingSpinner />;
+		
+		const tabComponents = {
+			'asset-registration': () => <AssetRegistration handleTabChange={handleTabChange} onDataChange={handleDataChange} />,
+			'search-assets': () => <SearchAssets assets={assets} onDataChange={handleDataChange} />,
+			'assign-work': () => <AssignWork workOrders={workOrders} technicians={technicians} onDataChange={handleDataChange} />,
+			'view-assignments': () => <ViewAssignments workOrders={workOrders} />,
+			'asset-history': () => <AssetHistory workOrders={workOrders} />,
+			'technician-summary': () => <TechnicianSummary workOrders={workOrders} />,
+			'search-technician': () => <SearchTechnicians technicians={technicians} handleTabChange={handleTabChange} />,
+			'register-technician': () => <RegisterTechnician handleTabChange={handleTabChange} onDataChange={handleDataChange} />,
+			'maintenance-plan': () => <MaintenancePlan plans={plans} />
+		};
+		
+		return (tabComponents[activeTab] || tabComponents['search-assets'])();
+	}, [activeTab, assets, technicians, workOrders, plans, loading, handleTabChange, handleDataChange]);
 
 	return (
 		<div className="app-container">
@@ -198,7 +157,7 @@ const SupervisorDashboard = () => {
 
 			<div className="main-content-wrapper">
 				<SupervisorHeader />
-				<main className="main-content-area" id="supervisor-dashboard-content">{renderActiveTab()}</main>
+				<main className="main-content-area" id="supervisor-dashboard-content">{renderActiveTab}</main>
 			</div>
 		</div>
 	);

@@ -1,23 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Modal from '../Modal';
 import axios from 'axios';
 
 const WorkOrderCard = React.memo(({ order, confirmStatusById, handleConfirmSelect, handleViewDetails, handleUpdate, completionData, handleCompletionDataChange }) => {
   const isCompleted = confirmStatusById[order?.workId] === 'Completed';
+  const cardStyle = useMemo(() => ({
+    background: 'var(--color-white)',
+    border: '1px solid var(--color-border-light)',
+    borderRadius: '8px',
+    padding: '20px',
+    position: 'relative'
+  }), []);
+  
   return (
     <motion.div
       key={order?.workId}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1, duration: 0.3 }}
-      style={{
-        background: 'var(--color-white)',
-        border: '1px solid var(--color-border-light)',
-        borderRadius: '8px',
-        padding: '20px',
-        position: 'relative',
-      }}
+      style={cardStyle}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
         <h3 style={{ color: 'var(--color-text-dark)', margin: 0, fontSize: '1.1rem' }}>
@@ -110,24 +112,19 @@ const WorkOrders = ({ workorders }) => {
   const [orders, setOrders] = useState([]);
   const [confirmStatusById, setConfirmStatusById] = useState({});
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState({
-    workId: '',
-    desc: '',
-    status: '',
-    assetId: '',
-    userId: '',
-    planId: '',
-    requestedDate: '',
-    frequency: ''
-  });
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [completionData, setCompletionData] = useState({});
 
-  useEffect(() => {
-    setOrders(workorders.filter(o => o?.status !== 'Completed'));
-  }, [workorders]);
+  const filteredOrders = useMemo(() => 
+    workorders.filter(o => o?.status !== 'Completed'), [workorders]
+  );
 
-  const handleConfirmSelect = (work, value) => {
-    setConfirmStatusById((prev) => ({ ...prev, [work.workId]: value }));
+  useEffect(() => {
+    setOrders(filteredOrders);
+  }, [filteredOrders]);
+
+  const handleConfirmSelect = useCallback((work, value) => {
+    setConfirmStatusById(prev => ({ ...prev, [work.workId]: value }));
     setSelectedOrder({
       workId: work?.workId,
       desc: work?.desc,
@@ -138,56 +135,53 @@ const WorkOrders = ({ workorders }) => {
       requestedDate: work?.requestedDate,
       frequency: work?.frequency
     });
-  };
+  }, []);
 
-  const handleCompletionDataChange = (workId, field, value) => {
+  const handleCompletionDataChange = useCallback((workId, field, value) => {
     setCompletionData(prev => ({
-        ...prev,
-        [workId]: { ...prev[workId], [field]: value }
+      ...prev,
+      [workId]: { ...prev[workId], [field]: value }
     }));
-  };
+  }, []);
 
-  const handleViewDetails = (order) => {
+  const handleViewDetails = useCallback((order) => {
     setSelectedOrder(order);
     setIsDetailsOpen(true);
-  };
+  }, []);
 
-  const handleCloseDetails = () => {
+  const handleCloseDetails = useCallback(() => {
     setIsDetailsOpen(false);
     setSelectedOrder(null);
-  };
+  }, []);
 
-  const handleUpdate = async (workId) => {
+  const handleUpdate = useCallback(async (workId) => {
     try {
       const orderToUpdate = orders.find(o => o.workId === workId);
       const updatedOrder = {
         ...orderToUpdate,
         status: confirmStatusById[workId],
         estimatedHours: completionData[workId]?.hours,
-        description: completionData[workId]?.description,
+        description: completionData[workId]?.description
       };
-      console.log(updatedOrder);
+      
       const response = await axios.put(`http://localhost:9092/workorder/updateStatus/${workId}`, updatedOrder);
       if (response.status === 200) {
-        setOrders((prev) => prev.filter((o) => o.workId !== workId));
+        setOrders(prev => prev.filter(o => o.workId !== workId));
+        setConfirmStatusById(prev => {
+          const { [workId]: removed, ...rest } = prev;
+          return rest;
+        });
+        setCompletionData(prev => {
+          const { [workId]: removed, ...rest } = prev;
+          return rest;
+        });
+        setSelectedOrder(null);
+        handleCloseDetails();
       }
-      handleCloseDetails();
-      setConfirmStatusById((prev) => {
-        const newConfirmStatus = { ...prev };
-        delete newConfirmStatus[workId];
-        return newConfirmStatus;
-      });
-      setCompletionData((prev) => {
-        const newCompletionData = { ...prev };
-        delete newCompletionData[workId];
-        return newCompletionData;
-      });
-      setSelectedOrder(null);
-      console.log(response.data);
     } catch (error) {
       console.error('Error updating work order status:', error);
     }
-  }
+  }, [orders, confirmStatusById, completionData, handleCloseDetails]);
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
@@ -202,7 +196,7 @@ const WorkOrders = ({ workorders }) => {
             No assigned work orders yet.
           </div>
         ) : (
-          orders.map((order) => (
+          orders.map(order => (
             <WorkOrderCard
               key={order?.workId}
               order={order}

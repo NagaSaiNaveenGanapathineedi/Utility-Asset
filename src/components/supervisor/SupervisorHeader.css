@@ -1,0 +1,248 @@
+.supervisor-header-greeting {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: white;
+  letter-spacing: 0.5px;
+}
+
+.supervisor-header-role {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.supervisor-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.supervisor-header-dropdown-container {
+  position: relative;
+}
+
+.supervisor-header-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: var(--color-text-on-dark);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.supervisor-header-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--status-in-progress-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.supervisor-header-user-info {
+  text-align: left;
+}
+
+.supervisor-header-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.supervisor-header-role-text {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.supervisor-header-chevron {
+  transition: transform 0.2s ease;
+}
+
+.supervisor-header-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.supervisor-header-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  min-width: 240px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.supervisor-header-dropdown-info {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--status-in-progress-bg);
+}
+
+.supervisor-header-dropdown-name {
+  font-weight: 600;
+  color: var(--color-text-dark);
+}
+
+.supervisor-header-dropdown-email {
+  font-size: 0.8rem;
+  color: var(--color-text-medium);
+}
+
+.supervisor-header-dropdown-role {
+  font-size: 0.8rem;
+  color: var(--status-in-progress-text);
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.supervisor-header-dropdown-menu {
+  padding: 8px 0;
+}
+
+.supervisor-header-dropdown-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+}
+
+.supervisor-header-dropdown-btn.profile {
+  color: var(--color-text-dark);
+}
+
+.supervisor-header-dropdown-btn.profile:hover {
+  background-color: var(--color-body-bg);
+}
+
+.supervisor-header-dropdown-btn.logout {
+  color: var(--status-open-text);
+  font-weight: 500;
+}
+
+.supervisor-header-dropdown-btn.logout:hover {
+  background-color: var(--status-open-bg);
+}
+
+.supervisor-header-divider {
+  height: 1px;
+  background: var(--color-border-light);
+  margin: 8px 0;
+}
+
+.supervisor-profile-modal-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.supervisor-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.supervisor-profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--status-in-progress-text), var(--color-light-primary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.supervisor-profile-name {
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+}
+
+.supervisor-profile-role {
+  margin: 0 0 4px 0;
+  color: var(--status-in-progress-text);
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.supervisor-profile-id {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.supervisor-profile-sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.supervisor-profile-section {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.supervisor-profile-section-title {
+  margin: 0 0 16px 0;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.supervisor-profile-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.supervisor-profile-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.supervisor-profile-item-icon {
+  color: var(--status-in-progress-text);
+}
+
+.supervisor-profile-item-label {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.supervisor-profile-item-value {
+  margin: 0;
+  color: white;
+  font-size: 0.9rem;
+}

@@ -1,18 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Search } from 'lucide-react';
+import { Search, Edit, Trash2 } from 'lucide-react';
 import Modal from '../Modal';
 import { styles } from './supervisorStyles';
 import axios from 'axios';
-import { Edit, Trash2 } from 'lucide-react';
+import { API_ENDPOINTS } from '../../config/api';
+import { ASSET_TYPES } from '../../config/constants';
+import LoadingSpinner from './LoadingSpinner';
 
 const AssetCard = ({ asset, compact = false, onEdit, onDelete }) => {
+    const cardStyle = useMemo(() => ({
+        background: 'var(--color-white)',
+        border: '1px solid var(--color-border-light)',
+        borderRadius: compact ? '12px' : '8px',
+        padding: '20px',
+        boxShadow: compact ? '0 4px 12px rgba(0,0,0,0.06)' : '0 2px 4px rgba(0,0,0,0.1)'
+    }), [compact]);
+
+    const assetDetails = useMemo(() => [
+        { label: 'Site Code', value: asset.siteCode },
+        { label: 'Registered', value: asset.regDate }
+    ], [asset.siteCode, asset.regDate]);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: compact ? 10 : 0, scale: compact ? 1 : 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.25 }}
-            style={{ background: 'var(--color-white)', border: '1px solid var(--color-border-light)', borderRadius: compact ? '12px' : '8px', padding: '20px', boxShadow: compact ? '0 4px 12px rgba(0,0,0,0.06)' : '0 2px 4px rgba(0,0,0,0.1)' }}
+            style={cardStyle}
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
                 <div>
@@ -21,13 +36,10 @@ const AssetCard = ({ asset, compact = false, onEdit, onDelete }) => {
                         <span style={{ padding: '4px 8px', border: '1px solid var(--color-border-light)', borderRadius: '999px', fontSize: '12px', color: 'var(--color-text-medium)', background: 'var(--color-body-bg)' }}>{asset.type}</span>
                     </div>
                 </div>
-                <span style={{ padding: '6px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.3px' }}>ID: {"AST-"+asset.id}</span>
+                <span style={{ padding: '6px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.3px' }}>ID: AST-{asset.id}</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px 16px', marginBottom: '12px' }}>
-                {[
-                    { label: 'Site Code', value: asset.siteCode },
-                    { label: 'Registered', value: asset.regDate }
-                ].map(({ label, value }) => (
+                {assetDetails.map(({ label, value }) => (
                     <div key={label} style={{ minWidth: 0 }}>
                         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px' }}>{label}</div>
                         <div style={{ fontSize: '14px', color: 'var(--color-text-dark)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</div>
@@ -58,80 +70,148 @@ const AssetCard = ({ asset, compact = false, onEdit, onDelete }) => {
     );
 };
 
-export const AssetRegistration = ({handleTabChange}) => {
-    const [formData, setFormData] = useState({ id: 0, name: "", type: "", siteCode: "", description: "", count: 0 , regDate: new Date().toLocaleDateString('en-CA') });
-    const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    const handleSubmit = async (e) => {
+export const AssetRegistration = ({ handleTabChange, onDataChange }) => {
+    const initialFormData = useMemo(() => ({
+        id: 0,
+        name: "",
+        type: "",
+        siteCode: "",
+        description: "",
+        count: 0,
+        regDate: new Date().toLocaleDateString('en-CA')
+    }), []);
+
+    const [formData, setFormData] = useState(initialFormData);
+    const [loading, setLoading] = useState(false);
+    
+    const handleChange = useCallback((e) => {
+        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    }, []);
+    
+    const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
-        if (!formData.name || !formData.type || !formData.siteCode || !formData.description || !formData.count || !formData.regDate) return alert('Please fill in all required fields');
-        try{
-            const response = await axios.post('http://localhost:9092/asset/save', {
+        
+        const requiredFields = ['name', 'type', 'siteCode', 'description', 'count', 'regDate'];
+        const missingFields = requiredFields.filter(field => !formData[field]);
+        
+        if (missingFields.length > 0) {
+            console.error('Validation failed: Missing required fields:', missingFields);
+            return;
+        }
+        
+        const count = parseInt(formData.count, 10);
+        if (isNaN(count) || count <= 0) {
+            console.error('Invalid count value');
+            return;
+        }
+        
+        setLoading(true);
+        try {
+            const payload = {
                 name: formData.name,
                 type: formData.type,
                 siteCode: formData.siteCode,
                 description: formData.description,
-                count: parseInt(formData.count, 10),
+                count,
                 regDate: formData.regDate
-            });
-            if(response.status!==200) throw new Error('Failed to register asset');
-            console.log(response);
-            setFormData({ id: 0, name: "", type: "", siteCode: "", description: "", count: 0, regDate: "" });
+            };
+            
+            await axios.post(API_ENDPOINTS.ASSET_SAVE, payload);
+            
+            setFormData(initialFormData);
+            onDataChange?.();
             handleTabChange("search-assets");
-        }catch(error){
-            console.error('Error:', error);
-            alert('Failed to register asset.');
+        } catch (error) {
+            console.error('Error registering asset:', error);
+        } finally {
+            setLoading(false);
         }
-    };
+    }, [formData, handleTabChange, onDataChange, initialFormData]);
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
             <h2 style={{ color: 'var(--color-text-dark)' }}>Asset Registration</h2>
             <p style={{ color: 'var(--color-text-medium)', fontSize: '1rem', marginBottom: '30px' }}>Register new assets in the system with complete information</p>
             <form onSubmit={handleSubmit} style={{ width: '100%' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '20px' }}>
-                    {[
+                    {useMemo(() => [
                         { name: 'name', label: 'Asset Name *', type: 'text', placeholder: 'Enter asset name' },
-                        { name: 'type', label: 'Type *', type: 'select', options: ['Server', 'HVAC', 'Printer', 'Network Equipment', 'Generator', 'Motor'] },
+                        { name: 'type', label: 'Type *', type: 'select', options: ASSET_TYPES },
                         { name: 'description', label: 'Description *', type: 'text', placeholder: 'Enter description' },
                         { name: 'count', label: 'Count *', type: 'number', placeholder: 'Enter count' },
                         { name: 'regDate', label: 'Registration Date *', type: 'text', placeholder: 'Enter registration date', value: new Date().toISOString(), disabled: true },
                         { name: 'siteCode', label: 'Site Code *', type: 'text', placeholder: 'Enter site code' }
-                    ].map((f) => (
+                    ], []).map((f) => (
                         <div key={f.name} className="form-group">
                             <label style={styles.label}>{f.label}</label>
                             {f.type === 'select' ? (
                                 <select name={f.name} value={formData[f.name]} onChange={handleChange} style={styles.input}>
-                                    {f.options.map((o) => (<option key={o} value={o}>{o ? o : 'Select type'}</option>))}
+                                    <option value="">Select type</option>
+                                    {f.options.map((o) => (<option key={o} value={o}>{o}</option>))}
                                 </select>
                             ) : (
-                                <input name={f.name} type="text" value={formData[f.name]===0?'':formData[f.name]} onChange={handleChange} style={styles.input} placeholder={f.placeholder} />
+                                <input name={f.name} type="text" value={formData[f.name] === 0 ? '' : formData[f.name]} onChange={handleChange} style={styles.input} placeholder={f.placeholder} />
                             )}
                         </div>
                     ))}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
-                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" className="btn btn-primary" style={{ minWidth: '200px', padding: '12px 24px', fontSize: '16px', fontWeight: '600' }}>Register Asset</motion.button>
+                    <motion.button 
+                        whileHover={{ scale: loading ? 1 : 1.02 }} 
+                        whileTap={{ scale: loading ? 1 : 0.98 }} 
+                        type="submit" 
+                        disabled={loading}
+                        className="btn btn-primary" 
+                        style={{ 
+                            minWidth: '200px', 
+                            padding: '12px 24px', 
+                            fontSize: '16px', 
+                            fontWeight: '600',
+                            opacity: loading ? 0.7 : 1,
+                            cursor: loading ? 'not-allowed' : 'pointer'
+                        }}
+                    >
+                        {loading ? 'Registering...' : 'Register Asset'}
+                    </motion.button>
                 </div>
             </form>
         </motion.div>
     );
 };
 
-export const SearchAssets = ({ assets, setLoad }) => {
+export const SearchAssets = ({ assets = [], onDataChange }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedType, setSelectedType] = useState('');
-    const [filteredAssets, setFilteredAssets] = useState(assets);
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const [editForm, setEditForm] = useState({ id: 0, name: '', type: '', count: 0, regDate: new Date().toLocaleDateString('en-CA'), siteCode: '', description: '' });
+    const [loading, setLoading] = useState(false);
     
-    useEffect(() => {
+    const initialEditForm = useMemo(() => ({
+        id: 0,
+        name: '',
+        type: '',
+        count: 0,
+        regDate: new Date().toLocaleDateString('en-CA'),
+        siteCode: '',
+        description: ''
+    }), []);
+    
+    const [editForm, setEditForm] = useState(initialEditForm);
+    
+    const filteredAssets = useMemo(() => {
         let list = [...assets];
-        if (searchTerm) list = list.filter(a => [a.id, a.name, a.type, a.count, a.regDate, a.siteCode].some(v => String(v).toLowerCase().includes(searchTerm.toLowerCase())));
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            list = list.filter(a => 
+                [a.id, a.name, a.type, a.count, a.regDate, a.siteCode]
+                    .some(v => v && String(v).toLowerCase().includes(term))
+            );
+        }
         if (selectedType) list = list.filter(a => a.type === selectedType);
-        setFilteredAssets(list);
+        return list;
     }, [assets, searchTerm, selectedType]);
-    const assetTypes = Array.from(new Set(assets.map(a => a.type)));
     
-    const handleEditChange = (asset) => {
+    const assetTypes = useMemo(() => Array.from(new Set(assets.map(a => a.type))), [assets]);
+    
+    const handleEditChange = useCallback((asset) => {
         setEditForm({
             id: asset.id,
             name: asset.name,
@@ -140,46 +220,48 @@ export const SearchAssets = ({ assets, setLoad }) => {
             regDate: asset.regDate,
             siteCode: asset.siteCode,
             description: asset.description
-        })
+        });
         setIsEditOpen(true);
-    };
+    }, []);
 
-    const handleInputChange = (e) => {
+    const handleInputChange = useCallback((e) => {
         const { name, value } = e.target;
         setEditForm(prev => ({ ...prev, [name]: value }));
-    };
+    }, []);
 
-    const handleSaveEdit = async(e) => {
+    const handleSaveEdit = useCallback(async (e) => {
         e?.preventDefault?.();
-        if (!editForm.id || !editForm.name || !editForm.type || !editForm.count || !editForm.regDate || !editForm.siteCode || !editForm.description) {
-            alert('Please fill in all required fields');
+        
+        const requiredFields = ['id', 'name', 'type', 'count', 'regDate', 'siteCode', 'description'];
+        const missingFields = requiredFields.filter(field => !editForm[field]);
+        
+        if (missingFields.length > 0) {
+            console.error('Validation failed: Missing required fields:', missingFields);
             return;
         }
-        try{
-            const response = await axios.put('http://localhost:9092/asset/update/'+editForm.id,editForm);
-            if(response.status!==200) throw new Error('Failed to update asset');
-            setIsEditOpen(false);
-            setLoad(prev => !prev);
-        }catch(error){
-            console.error('Error:', error);
-            alert('Failed to update asset.');
-        }
         
-    };
+        setLoading(true);
+        try {
+            await axios.put(API_ENDPOINTS.ASSET_UPDATE(editForm.id), editForm);
+            setIsEditOpen(false);
+            onDataChange?.();
+        } catch (error) {
+            console.error('Error updating asset:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [editForm, onDataChange]);
 
-    const handleDeleteAsset = (id) => { if (window.confirm('Are you sure you want to delete this asset?')) { 
-        axios.delete('http://localhost:9092/asset/delete/'+id)
-        .then(response => {
-            if(response.status!==200){
-                throw new Error('Failed to delete asset');
-            }
-            alert("Asset deleted sucessfully");
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-     }
-    };
+    const handleDeleteAsset = useCallback(async (id) => {
+        if (!window.confirm('Are you sure you want to delete this asset?')) return;
+        
+        try {
+            await axios.delete(API_ENDPOINTS.ASSET_DELETE(id));
+            if (onDataChange) onDataChange();
+        } catch (error) {
+            console.error('Error deleting asset:', error);
+        }
+    }, [onDataChange]);
 
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
@@ -216,7 +298,13 @@ export const SearchAssets = ({ assets, setLoad }) => {
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px' }}>
                     {filteredAssets.map(asset => (
-                        <AssetCard key={asset.id} asset={asset} compact onEdit={()=>{handleEditChange(asset)}} onDelete={handleDeleteAsset} />
+                        <AssetCard 
+                            key={asset.id} 
+                            asset={asset} 
+                            compact 
+                            onEdit={() => handleEditChange(asset)} 
+                            onDelete={handleDeleteAsset} 
+                        />
                     ))}
                 </div>
             )}
@@ -225,13 +313,13 @@ export const SearchAssets = ({ assets, setLoad }) => {
             <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Update Asset" maxWidth="700px">
                 <form onSubmit={handleSaveEdit} style={{ width: '100%' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '16px' }}>
-                        {[
+                        {useMemo(() => [
                             { name: 'id', label: 'Asset ID *', type: 'text', placeholder: 'Enter asset ID' },
                             { name: 'name', label: 'Asset Name *', type: 'text', placeholder: 'Enter asset name' },
-                            { name: 'type', label: 'Type *', type: 'select', options: ['', 'Server', 'HVAC', 'Printer', 'Network Equipment', 'Generator'] },
+                            { name: 'type', label: 'Type *', type: 'select', options: ['', ...ASSET_TYPES] },
                             { name: 'count', label: 'Count *', type: 'text', placeholder: 'Enter count' },
                             { name: 'siteCode', label: 'Site Code *', type: 'text', placeholder: 'Enter site code' }
-                        ].map((f) => (
+                        ], []).map((f) => (
                             <div key={f.name} className="form-group">
                                 <label style={styles.label}>{f.label}</label>
                                 {f.type === 'select' ? (
@@ -244,7 +332,7 @@ export const SearchAssets = ({ assets, setLoad }) => {
                                 <input
                                     name={f.name}
                                     type="text"
-                                    value={ editForm[f.name] }
+                                    value={editForm[f.name]}
                                     onChange={f.name === 'id' ? undefined : handleInputChange}
                                     style={styles.input}
                                     placeholder={f.placeholder}
@@ -259,8 +347,22 @@ export const SearchAssets = ({ assets, setLoad }) => {
                         <textarea name="description" value={editForm.description} onChange={handleInputChange} placeholder="Enter asset description..." style={{ ...styles.input, minHeight: '90px', resize: 'vertical' }} rows="4" />
                     </div>
                     <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                        <button type="button" className="btn" onClick={() => setIsEditOpen(false)} style={{ padding: '10px 16px' }}>Cancel</button>
-                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" className="btn btn-primary" style={{ padding: '10px 16px', fontWeight: '600' }}>Save Changes</motion.button>
+                        <button type="button" className="btn" onClick={() => setIsEditOpen(false)} disabled={loading} style={{ padding: '10px 16px' }}>Cancel</button>
+                        <motion.button 
+                            whileHover={{ scale: loading ? 1 : 1.02 }} 
+                            whileTap={{ scale: loading ? 1 : 0.98 }} 
+                            type="submit" 
+                            disabled={loading}
+                            className="btn btn-primary" 
+                            style={{ 
+                                padding: '10px 16px', 
+                                fontWeight: '600',
+                                opacity: loading ? 0.7 : 1,
+                                cursor: loading ? 'not-allowed' : 'pointer'
+                            }}
+                        >
+                            {loading ? 'Saving...' : 'Save Changes'}
+                        </motion.button>
                     </div>
                 </form>
             </Modal>

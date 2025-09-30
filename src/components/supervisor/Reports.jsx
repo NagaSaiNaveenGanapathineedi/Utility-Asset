@@ -1,21 +1,36 @@
 import { motion } from 'framer-motion';
 import StatusBadge from './StatusBadge';
+import LoadingSpinner from './LoadingSpinner';
 
 
-export const AssetHistory = ({ workOrders }) => {
+export const AssetHistory = ({ workOrders, loading = false }) => {
 	const history = workOrders.filter(wo=>wo.techId!=null);
+	
+	if (loading) {
+		return <LoadingSpinner />;
+	}
 	return (
 		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
 			<h2 style={{ color: 'var(--color-text-dark)' }}>Asset History</h2>
 			<p style={{ color: 'var(--color-text-medium)', fontSize: '1rem', marginBottom: '20px' }}>Logs of requests and assignments</p>
 			{history.length === 0 ? (
-				<div style={{ textAlign: 'center', padding: '30px', background: 'var(--color-body-bg)', border: '1px solid var(--color-border-light)', borderRadius: '8px', color: 'var(--color-text-medium)' }}>
+				<motion.div 
+					initial={{ opacity: 0 }} 
+					animate={{ opacity: 1 }} 
+					style={{ textAlign: 'center', padding: '30px', background: 'var(--color-body-bg)', border: '1px solid var(--color-border-light)', borderRadius: '8px', color: 'var(--color-text-medium)' }}
+				>
 					No history yet.
-				</div>
+				</motion.div>
 			) : (
 				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-					{history.map((h) => (
-						<div key={h?.workId} style={{ border: '1px solid var(--color-border-light)', borderRadius: '8px', padding: '16px' }}>
+					{history.map((h, idx) => (
+						<motion.div 
+							key={h?.workId} 
+							initial={{ opacity: 0, y: 20 }} 
+							animate={{ opacity: 1, y: 0 }} 
+							transition={{ delay: idx * 0.1 }}
+							style={{ border: '1px solid var(--color-border-light)', borderRadius: '8px', padding: '16px' }}
+						>
 							<div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
 								<strong>{h?.assetId?.name}</strong>
 								<StatusBadge status={h?.status} />
@@ -28,7 +43,7 @@ export const AssetHistory = ({ workOrders }) => {
 								<div><strong>Assigned Technician :</strong> {h?.techId?.name || 'Un Assigned'}</div>
 								<div><strong>Maintenance till :</strong> {h?.planId?.nextMaintenanceDate}</div>
 							</div>
-						</div>
+						</motion.div>
 					))}
 				</div>
 			)}
@@ -36,7 +51,11 @@ export const AssetHistory = ({ workOrders }) => {
 	);
 };
 
-export const TechnicianSummary = ({ workOrders }) => {
+export const TechnicianSummary = ({ workOrders, loading = false }) => {
+	if (loading) {
+		return <LoadingSpinner />;
+	}
+	
 	const summary = workOrders.reduce((acc, w) => {
 		if (!w.techId) return acc;
 		const key = w?.techId?.id || w?.techId?.name;
@@ -76,14 +95,24 @@ export const TechnicianSummary = ({ workOrders }) => {
 		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
 			<h2 style={{ color: 'var(--color-text-dark)' }}>Technician Summary</h2>
 			<p style={{ color: 'var(--color-text-medium)', fontSize: '1rem', marginBottom: '20px' }}>Assigned tasks overview by technician</p>
-			{entries.length === 0 ? (
-				<div style={{ textAlign: 'center', padding: '30px', background: 'var(--color-body-bg)', border: '1px solid var(--color-border-light)', borderRadius: '8px', color: 'var(--color-text-medium)' }}>
+			{summary.length === 0 ? (
+				<motion.div 
+					initial={{ opacity: 0 }} 
+					animate={{ opacity: 1 }} 
+					style={{ textAlign: 'center', padding: '30px', background: 'var(--color-body-bg)', border: '1px solid var(--color-border-light)', borderRadius: '8px', color: 'var(--color-text-medium)' }}
+				>
 					No technician assignments yet.
-				</div>
+				</motion.div>
 			) : (
 				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
 					{entries.map((e, idx) => (
-						<div key={idx} style={{ background: 'var(--color-white)', border: '1px solid var(--color-border-light)', borderRadius: '8px', padding: '16px' }}>
+						<motion.div 
+							key={idx} 
+							initial={{ opacity: 0, y: 20 }} 
+							animate={{ opacity: 1, y: 0 }} 
+							transition={{ delay: idx * 0.1 }}
+							style={{ background: 'var(--color-white)', border: '1px solid var(--color-border-light)', borderRadius: '8px', padding: '16px' }}
+						>
 							<div style={{ marginBottom: '8px', color: 'var(--color-text-dark)', fontWeight: 700 }}>{e.assignedTo} <span style={{ opacity: 0.6, fontWeight: 500 }}>({"TEC-"+e.assignedToId || '—'})</span></div>
 							<div style={{ display: 'flex', gap: '10px', fontSize: '14px', color: 'var(--color-text-medium)' }}>
 								<div><strong>Total:</strong> {e.total}</div>
@@ -100,7 +129,7 @@ export const TechnicianSummary = ({ workOrders }) => {
 									))
 								}
 							</div>
-						</div>
+						</motion.div>
 					))}
 				</div>
 			)}
