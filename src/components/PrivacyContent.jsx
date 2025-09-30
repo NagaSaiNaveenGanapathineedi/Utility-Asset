@@ -8,7 +8,7 @@ const PrivacyContent = () => {
           Effective Date: {new Date().toLocaleDateString()}
         </p>
         <p style={{ margin: '0 0 16px 0' }}>
-          This Privacy Policy describes how the Utility Asset Maintenance Tracker ("we," "us," or "our") collects, uses, and protects your information when you use our utility asset management platform.
+          This Privacy Policy describes how the Utility Asset Maintenance Tracker (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) collects, uses, and protects your information when you use our utility asset management platform.
         </p>
       </div>
 
@@ -223,4 +223,4 @@ const PrivacyContent = () => {
   );
 };
 
-export default PrivacyContent; 
+export default PrivacyContent;

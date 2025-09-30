@@ -2,166 +2,131 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../App';
-import { 
-  LogIn, 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  AlertCircle, 
-  Shield, 
-  CheckCircle 
+import axios from 'axios';
+ 
+import {
+  LogIn,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Shield,
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import TermsContent from '../components/TermsContent';
 import PrivacyContent from '../components/PrivacyContent';
-
+ 
+const API_BASE_URL = 'http://localhost:9092';
+ 
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
+ 
   useEffect(() => {
     if (location.state?.registeredSuccess) {
-      try { alert('Account created successfully. Please sign in.'); } catch {}
+      alert('Account created successfully. Please sign in.');
       // replace state to clear banner on back/refresh
       navigate('/login', { replace: true, state: { registeredEmail: location.state.registeredEmail } });
     }
-  }, [location.state]);
+  }, [location.state, navigate]);
+ 
   const { login } = useAuth();
-  
+ 
   const [formData, setFormData] = useState(() => ({
     email: (location.state && location.state.registeredEmail) || '',
     password: ''
   }));
-  
+ 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-
+ 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
+   
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
-
+ 
   const validateForm = () => {
     const newErrors = {};
-
+ 
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
-
+ 
     if (!formData.password) {
       newErrors.password = 'Password is required';
     }
-
+ 
     return newErrors;
   };
-
-  const getRolePermissions = (role) => {
-    const permissions = {
-      admin: ['user_management', 'asset_management', 'work_orders', 'reports', 'system_config', 'technician_oversight'],
-      supervisor: ['asset_management', 'work_orders', 'reports', 'technician_oversight'],
-      technician: ['work_orders', 'view_reports'],
-      user: ['view_reports']
-    };
-    return permissions[role] || [];
-  };
-
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+   
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-
+ 
     setLoading(true);
-
-    // Static credentials for different roles (fallback)
-    const validCredentials = {
-      'user@gmail.com': { password: 'user123', role: 'user', name: 'Demo User' },
-      'admin@gmail.com': { password: 'admin123', role: 'admin', name: 'System Administrator' },
-      'supervisor@gmail.com': { password: 'supervisor123', role: 'supervisor', name: 'Maintenance Supervisor' },
-      'technician@gmail.com': { password: 'tech123', role: 'technician', name: 'Field Technician' }
-    };
-
-    // Simulate login API call with local users support
-    setTimeout(() => {
-      const emailKey = (formData.email || '').toLowerCase();
-      // 1) Check locally registered users
-      let userCredential = null;
-      try {
-        const stored = JSON.parse(localStorage.getItem('users') || '[]');
-        const localUsers = Array.isArray(stored) ? stored : [];
-        const found = localUsers.find(u => (u.email || '').toLowerCase() === emailKey);
-        if (found && found.password === formData.password) {
-          userCredential = { ...found, role: 'user', name: found.name || found.firstName || 'User' };
+ 
+    try {
+      const response = await fetch(`${API_BASE_URL}/user/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        })
+      });
+ 
+      if (response.ok) {
+        const { token, id, name, email, password, phno, region,pincode,location,skill, role } = await response.json();
+       
+        // Debug: Check what we're getting from backend
+        // console.log('Login response:', { token, id, name, email, password, phno, region,pincode,location,skill, role });
+       
+        // Store token and set axios default header
+        localStorage.setItem('authToken', token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+       
+        const user = { id, name, email, password, phno, region,pincode,location,skill, role, token };
+        // console.log('User object:', user);
+        login(user);
+       
+        if (role === 'admin') {
+          navigate('/admin-dashboard');
+        } else if (role === "supervisor") {
+          navigate('/supervisor-dashboard');
+        } else if (role === 'technician') {
+          navigate('/technician-dashboard');
+        } else {
+          navigate('/dashboard');
         }
-      } catch {}
-
-      // 2) Fallback to demo accounts if not found locally
-      if (!userCredential) {
-        const demo = validCredentials[emailKey];
-        if (demo && demo.password === formData.password) {
-          userCredential = { ...demo, email: formData.email };
-        }
-      }
-
-      if (!userCredential) {
-        setErrors({ 
-          email: 'Invalid email or password. Please check your credentials and try again.' 
-        });
-        setLoading(false);
-        return;
-      }
-
-      const role = userCredential.role || 'user';
-      const userData = {
-        name: userCredential.name,
-        email: formData.email,
-        role,
-        company: 'Utility Corporation',
-        permissions: getRolePermissions(role)
-      };
-      
-      // Enrich with technician identifiers and department when applicable
-      if (role === 'technician') {
-        userData.technicianId = 'T-009';
-        userData.employeeId = 'T-009';
-        userData.department = 'Maintenance';
-      }
-      if (role === 'supervisor') {
-        userData.department = 'Operations';
-      }
-      if (role === 'admin') {
-        userData.department = 'Administration';
-      }
-
-      login(userData);
-      
-      // Route to different dashboards based on role
-      if (role === 'admin') {
-        navigate('/admin-dashboard');
-      } else if (role === 'supervisor') {
-        navigate('/supervisor-dashboard');
-      } else if (role === 'technician') {
-        navigate('/technician-dashboard');
       } else {
-        navigate('/dashboard');
+        setErrors({ email: 'Invalid email or password. Please try again.' });
       }
-    }, 1500);
+    } catch (error) {
+      console.error('Network error:', error);
+      setErrors({ email: 'Could not connect to the server. Please try again later.' });
+    } finally {
+      setLoading(false);
+    }
   };
-
+ 
   return (
     <div className="auth-layout">
       <div className="auth-container">
@@ -189,7 +154,7 @@ const LoginPage = () => {
               Sign in to your Utility Asset Management System
             </p>
           </motion.div>
-
+ 
           {/* Login Form */}
           <form onSubmit={handleSubmit}>
             {/* Email Field */}
@@ -225,7 +190,7 @@ const LoginPage = () => {
                 </motion.div>
               )}
             </motion.div>
-
+ 
             {/* Password Field */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -267,9 +232,7 @@ const LoginPage = () => {
                 </motion.div>
               )}
             </motion.div>
-
-            {/* Remember & Forgot Password */}
-
+ 
             {/* Submit Button */}
             <motion.button
               initial={{ opacity: 0, y: 10 }}
@@ -290,7 +253,7 @@ const LoginPage = () => {
                 'Sign In'
               )}
             </motion.button>
-
+ 
             {/* Register Link */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -299,7 +262,7 @@ const LoginPage = () => {
               className="text-center"
             >
               <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.95rem' }}>
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link to="/register" className="link">
                   Create one here
                 </Link>
@@ -307,7 +270,7 @@ const LoginPage = () => {
             </motion.div>
           </form>
         </motion.div>
-
+ 
         {/* Demo Credentials Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -326,7 +289,7 @@ const LoginPage = () => {
             </div>
           </div>
         </motion.div>
-
+ 
         {/* Features */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -338,7 +301,7 @@ const LoginPage = () => {
             Enterprise Asset Management • Role-Based Access • Secure & Compliant
           </p>
         </motion.div>
-
+ 
         {/* Legal Links */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -367,7 +330,7 @@ const LoginPage = () => {
           </p>
         </motion.div>
       </div>
-
+ 
       {/* Terms Modal */}
       <Modal
         isOpen={showTermsModal}
@@ -376,7 +339,7 @@ const LoginPage = () => {
       >
         <TermsContent />
       </Modal>
-
+ 
       {/* Privacy Modal */}
       <Modal
         isOpen={showPrivacyModal}
@@ -388,5 +351,5 @@ const LoginPage = () => {
     </div>
   );
 };
-
-export default LoginPage; 
+ 
+export default LoginPage;

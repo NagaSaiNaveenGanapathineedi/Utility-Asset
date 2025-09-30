@@ -1,16 +1,8 @@
 import { motion } from 'framer-motion';
-import { useAppData } from '../../context/AppDataContext.jsx';
-import { useAuth } from '../../App';
 import { BarChart3 } from 'lucide-react';
 
-// Work History (moved from Reports content)
-const WorkHistory = () => {
-  const { workOrders } = useAppData();
-  const { user } = useAuth();
-  const techId = user?.employeeId || user?.technicianId;
-  const techName = user?.name;
-  const completed = workOrders.filter(o => (o.assignedToId && techId && o.assignedToId === techId) || (o.assignedTo && techName && o.assignedTo === techName)).filter(o => o.status === 'Done');
-
+const WorkHistory = ({ workorders }) => {
+  const completed = workorders.filter(order => order.status === "Completed");
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -49,7 +41,7 @@ const WorkHistory = () => {
               padding: '16px'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                <h3 style={{ color: 'var(--color-text-dark)', margin: 0, fontSize: '1rem' }}>{order.description}</h3>
+                <h3 style={{ color: 'var(--color-text-dark)', margin: 0, fontSize: '1rem' }}>{order.desc}</h3>
                 <span style={{
                   padding: '4px 8px',
                   borderRadius: '4px',
@@ -59,14 +51,13 @@ const WorkHistory = () => {
                   color: 'var(--status-completed-text)'
                 }}>Done</span>
               </div>
-              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>ID:</strong> {order.workId}</p>
-              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Scheduled:</strong> {order.scheduledDate}</p>
-              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Requested By:</strong> {order.requestedBy} ({order.requestedById})</p>
-              {order.completedAt && (
-                <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Completed:</strong> {new Date(order.completedAt).toLocaleString()}</p>
-              )}
+              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Asset:</strong> { order.assetId.name}</p>
+              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Requested By:</strong> {order.userId.name}</p>
+              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Due On:</strong> {order.planId.nextMaintenanceDate}</p>
+              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Maintenance for:</strong> {order.frequency} days</p>
             </div>
           ))}
+          
         </div>
       )}
     </motion.div>

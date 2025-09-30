@@ -41,7 +41,7 @@ export const ViewAssignments = ({ workOrders }) => {
 
 // Register Technician Component
 export const RegisterTechnician = ( {handleTabChange} ) => {
-	const [form, setForm] = useState({ name: '', email : '', password: 'Demo@uamt123', phno : '', region:'', pincode:'', location:'', skill: '', role :'Technician' });
+	const [form, setForm] = useState({ name: '', email : '', password: 'Demo@uamt123', phno : '', region:'', pincode:'', location:'', skill: '', role :'technician' });
 	const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 	const handleSubmit = async (e) => {
 		setForm(prev => ({...prev,phno:parseInt(form.phno)}));
@@ -101,6 +101,10 @@ export const RegisterTechnician = ( {handleTabChange} ) => {
 							{regions.map(r => (<option key={r} value={r}>{r || 'Select region'}</option>))}
 						</select>
 					</div>
+					<div className="form-group">
+						<label style={styles.label}>Pincode *</label>
+						<input name="pincode" type="text" value={form.pincode} onChange={handleChange} style={styles.input} placeholder="Enter pincode" />
+					</div>
 				</div>
 				<div style={{ display: 'flex', justifyContent: 'center' }}>
 					<motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" className="btn btn-primary" style={{ minWidth: '200px', padding: '12px 24px', fontSize: '16px', fontWeight: '600' }}>Register</motion.button>
@@ -130,7 +134,7 @@ export const SearchTechnicians = ({ technicians, handleTabChange }) => {
 				<p style={{ margin: 0, color: 'var(--color-text-medium)', fontSize: '0.9rem' }}>
 					{searchTerm ? (
 						<>
-							<strong style={{ color: 'var(--color-text-dark)' }}>{filtered.length}</strong> technician{filtered.length !== 1 ? 's' : ''} found matching "<strong>{searchTerm}</strong>"
+							<strong style={{ color: 'var(--color-text-dark)' }}>{filtered.length}</strong> technician{filtered.length !== 1 ? 's' : ''} found matching &quot;<strong>{searchTerm}</strong>&quot;
 						</>
 					) : (
 						<>

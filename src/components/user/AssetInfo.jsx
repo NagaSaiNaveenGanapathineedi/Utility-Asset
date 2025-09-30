@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-//import { assetsData } from '../../data/assets';
 
 const AssetInfo = ({assets}) => {
   //console.log(assets);

@@ -1,159 +1,154 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../App';
-import { 
-  UserPlus, 
-  User, 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  AlertCircle, 
-  CheckCircle
+import {
+  UserPlus,
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Phone,
+  Globe,
+  MapPin,
+  Wrench // 🔧 Replaced 'Tool' with the available 'Wrench' icon
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import TermsContent from '../components/TermsContent';
 import PrivacyContent from '../components/PrivacyContent';
-
+ 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  
+ 
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
+    phno: '',
+    region: '',
+    pincode: '',
+    location: '',
+    skill: '',
     terms: false
   });
-
+ 
   const [errors, setErrors] = useState({});
+  const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-
+ 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    
-    // Clear error when user starts typing
+   
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+    setAuthError('');
   };
-
+ 
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
-    }
-
+ 
+    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
+    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
-
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
-
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-
-    if (!formData.terms) {
-      newErrors.terms = 'You must accept the terms and conditions';
-    }
-
+    if (!formData.terms) newErrors.terms = 'You must accept the terms and conditions';
+ 
     return newErrors;
   };
-
-  const getRolePermissions = (role) => {
-    const permissions = {
-      admin: ['user_management', 'asset_management', 'work_orders', 'reports', 'system_config', 'technician_oversight'],
-      supervisor: ['asset_management', 'work_orders', 'reports', 'technician_oversight'],
-      technician: ['work_orders', 'view_reports'],
-      user: ['view_reports']
-    };
-    return permissions[role] || [];
-  };
-
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    setAuthError('');
+ 
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-
+ 
     setLoading(true);
-
-    // Simulate registration API call - save user and redirect to login
-    setTimeout(() => {
-      try {
-        const newUser = {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          name: `${formData.firstName} ${formData.lastName}`.trim(),
-          email: formData.email,
-          password: formData.password
-        };
-        const existing = JSON.parse(localStorage.getItem('users') || '[]');
-        const users = Array.isArray(existing) ? existing : [];
-        const already = users.find(u => (u.email || '').toLowerCase() === newUser.email.toLowerCase());
-        if (already) {
-          setErrors({ email: 'An account with this email already exists. Please login.' });
-          setLoading(false);
-          return;
-        }
-        users.push(newUser);
-        localStorage.setItem('users', JSON.stringify(users));
-        setLoading(false);
-        navigate('/login', { state: { registeredSuccess: true, registeredEmail: newUser.email } });
-      } catch {
-        setErrors({ email: 'Could not save your account locally. Please try again.' });
-        setLoading(false);
+ 
+    const payload = {
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        phno: formData.phno.trim() ? parseInt(formData.phno.trim()) : null,
+        region: formData.region.trim() || null,
+        pincode: formData.pincode.trim() || null,
+        location: formData.location.trim() || null,
+        skill: formData.skill.trim() || null,
+        role: 'user'
+    };
+ 
+    try {
+      const response = await fetch('http://localhost:9092/user/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+     
+      const data = await response.json();
+ 
+      if (response.ok) {
+        navigate('/login', { state: { registeredSuccess: true, registeredEmail: formData.email } });
+      } else {
+        const errorMessage = data.message || 'Registration failed. Please try again.';
+        setAuthError(errorMessage);
       }
-    }, 2000);
+    } catch (error) {
+      console.error('Network error:', error);
+      setAuthError('Could not connect to the server. Please check your network or try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
-
+ 
   const getPasswordStrength = (password) => {
     if (!password) return { strength: 0, label: '', color: '' };
-    
+   
     let strength = 0;
     if (password.length >= 6) strength++;
     if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
     if (password.match(/\d/)) strength++;
     if (password.match(/[^a-zA-Z\d]/)) strength++;
-
+ 
     const labels = ['', 'weak', 'fair', 'good', 'strong'];
     const colors = ['', 'strength-weak', 'strength-fair', 'strength-good', 'strength-strong'];
-    
+   
     return {
       strength,
       label: labels[strength],
       color: colors[strength]
     };
   };
-
+ 
   const getPasswordStrengthLabel = (strength) => {
     const config = {
       1: { label: 'Weak', className: 'strength-weak' },
@@ -163,9 +158,9 @@ const RegisterPage = () => {
     };
     return config[strength] || { label: '', className: '' };
   };
-
+ 
   const passwordStrength = getPasswordStrength(formData.password);
-
+ 
   return (
     <div className="auth-layout">
       <div className="auth-container">
@@ -175,7 +170,6 @@ const RegisterPage = () => {
           transition={{ duration: 0.5 }}
           className="auth-card"
         >
-          {/* Header */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -193,10 +187,19 @@ const RegisterPage = () => {
               Join the Utility Asset Management System
             </p>
           </motion.div>
-
-          {/* Registration Form */}
+ 
           <form onSubmit={handleSubmit}>
-            {/* Name Fields */}
+            {authError && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="form-error"
+              >
+                <AlertCircle size={16} />
+                {authError}
+              </motion.div>
+            )}
+ 
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -231,7 +234,7 @@ const RegisterPage = () => {
                   </motion.div>
                 )}
               </div>
-
+ 
               <div className="form-group" style={{ marginBottom: '0' }}>
                 <label htmlFor="lastName" className="form-label">
                   Last Name
@@ -260,8 +263,7 @@ const RegisterPage = () => {
                 )}
               </div>
             </motion.div>
-
-            {/* Email Field */}
+ 
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -294,8 +296,7 @@ const RegisterPage = () => {
                 </motion.div>
               )}
             </motion.div>
-
-            {/* Password Field */}
+ 
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -325,14 +326,13 @@ const RegisterPage = () => {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-              
-              {/* Password Strength Indicator */}
+             
               {formData.password && (
                 <div style={{ marginTop: '8px' }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    gap: '4px', 
-                    marginBottom: '4px' 
+                  <div style={{
+                    display: 'flex',
+                    gap: '4px',
+                    marginBottom: '4px'
                   }}>
                     {[1, 2, 3, 4].map((level) => (
                       <div
@@ -340,7 +340,7 @@ const RegisterPage = () => {
                         style={{
                           height: '4px',
                           flex: 1,
-                          backgroundColor: passwordStrength.strength >= level 
+                          backgroundColor: passwordStrength.strength >= level
                             ? (level === 1 ? '#ef4444' : level === 2 ? '#f59e0b' : level === 3 ? '#3b82f6' : '#22c55e')
                             : 'rgba(255, 255, 255, 0.2)',
                           borderRadius: '2px',
@@ -350,11 +350,11 @@ const RegisterPage = () => {
                     ))}
                   </div>
                   {passwordStrength.strength > 0 && (
-                    <p style={{ 
-                      fontSize: '0.8rem', 
+                    <p style={{
+                      fontSize: '0.8rem',
                       margin: '0',
-                      color: passwordStrength.strength === 1 ? '#ef4444' : 
-                             passwordStrength.strength === 2 ? '#f59e0b' : 
+                      color: passwordStrength.strength === 1 ? '#ef4444' :
+                             passwordStrength.strength === 2 ? '#f59e0b' :
                              passwordStrength.strength === 3 ? '#3b82f6' : '#22c55e'
                     }}>
                       Password strength: {getPasswordStrengthLabel(passwordStrength.strength).label}
@@ -362,7 +362,7 @@ const RegisterPage = () => {
                   )}
                 </div>
               )}
-
+ 
               {errors.password && (
                 <motion.div
                   initial={{ opacity: 0, y: -5 }}
@@ -374,8 +374,7 @@ const RegisterPage = () => {
                 </motion.div>
               )}
             </motion.div>
-
-            {/* Confirm Password Field */}
+ 
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -416,12 +415,128 @@ const RegisterPage = () => {
                 </motion.div>
               )}
             </motion.div>
-
-            {/* Terms and Conditions */}
+ 
+            {/* Phone Number Field */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6, duration: 0.4 }}
+              className="form-group"
+            >
+              <label htmlFor="phno" className="form-label">
+                Phone Number
+              </label>
+              <div className="input-group">
+                <Phone size={20} className="input-icon" />
+                <input
+                  id="phno"
+                  name="phno"
+                  type="tel"
+                  value={formData.phno}
+                  onChange={handleChange}
+                  className="form-input input-with-icon"
+                  placeholder="e.g., 1234567890"
+                />
+              </div>
+            </motion.div>
+ 
+            {/* Region Field */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7, duration: 0.4 }}
+              className="form-group"
+            >
+              <label htmlFor="region" className="form-label">
+                Region
+              </label>
+              <div className="input-group">
+                <Globe size={20} className="input-icon" />
+                <input
+                  id="region"
+                  name="region"
+                  type="text"
+                  value={formData.region}
+                  onChange={handleChange}
+                  className="form-input input-with-icon"
+                  placeholder="e.g., North America"
+                />
+              </div>
+            </motion.div>
+ 
+            {/* Pincode & Location Fields */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.8, duration: 0.4 }}
+              className="grid grid-cols-2 gap-4"
+              style={{ marginBottom: '25px' }}
+            >
+              <div className="form-group" style={{ marginBottom: '0' }}>
+                <label htmlFor="pincode" className="form-label">
+                  Pincode
+                </label>
+                <div className="input-group">
+                  <MapPin size={20} className="input-icon" />
+                  <input
+                    id="pincode"
+                    name="pincode"
+                    type="text"
+                    value={formData.pincode}
+                    onChange={handleChange}
+                    className="form-input input-with-icon"
+                    placeholder="e.g., 12345"
+                  />
+                </div>
+              </div>
+ 
+              <div className="form-group" style={{ marginBottom: '0' }}>
+                <label htmlFor="location" className="form-label">
+                  Location
+                </label>
+                <div className="input-group">
+                  <MapPin size={20} className="input-icon" />
+                  <input
+                    id="location"
+                    name="location"
+                    type="text"
+                    value={formData.location}
+                    onChange={handleChange}
+                    className="form-input input-with-icon"
+                    placeholder="e.g., New York"
+                  />
+                </div>
+              </div>
+            </motion.div>
+ 
+            {/* Skill Field */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.9, duration: 0.4 }}
+              className="form-group"
+            >
+              <label htmlFor="skill" className="form-label">
+                Skill
+              </label>
+              <div className="input-group">
+                <Wrench size={20} className="input-icon" />
+                <input
+                  id="skill"
+                  name="skill"
+                  type="text"
+                  value={formData.skill}
+                  onChange={handleChange}
+                  className="form-input input-with-icon"
+                  placeholder="e.g., Java Developer"
+                />
+              </div>
+            </motion.div>
+           
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.6, duration: 0.4 }}
+              transition={{ delay: 1.0, duration: 0.4 }}
               className="form-group"
             >
               <label className="checkbox-group">
@@ -465,12 +580,11 @@ const RegisterPage = () => {
                 </motion.div>
               )}
             </motion.div>
-
-            {/* Submit Button */}
+ 
             <motion.button
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7, duration: 0.4 }}
+              transition={{ delay: 1.1, duration: 0.4 }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
@@ -486,12 +600,11 @@ const RegisterPage = () => {
                 'Create Account'
               )}
             </motion.button>
-
-            {/* Login Link */}
+ 
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.8, duration: 0.4 }}
+              transition={{ delay: 1.2, duration: 0.4 }}
               className="text-center"
             >
               <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.95rem' }}>
@@ -503,29 +616,27 @@ const RegisterPage = () => {
             </motion.div>
           </form>
         </motion.div>
-
-        {/* Account Type Info */}
+ 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9, duration: 0.5 }}
+          transition={{ delay: 1.3, duration: 0.5 }}
           className="alert alert-info"
         >
           <User size={20} />
           <div>
             <p className="font-semibold mb-1">User Account</p>
             <p className="text-sm">
-              You're creating a standard user account with access to view reports, monitor system performance, 
+              You&apos;re creating a standard user account with access to view reports, monitor system performance,
               and basic dashboard functionality. Contact your administrator for elevated permissions.
             </p>
           </div>
         </motion.div>
-
-        {/* Features */}
+ 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.0, duration: 0.5 }}
+          transition={{ delay: 1.4, duration: 0.5 }}
           className="text-center mt-6"
         >
           <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.9rem' }}>
@@ -533,8 +644,7 @@ const RegisterPage = () => {
           </p>
         </motion.div>
       </div>
-
-      {/* Terms Modal */}
+ 
       <Modal
         isOpen={showTermsModal}
         onClose={() => setShowTermsModal(false)}
@@ -542,8 +652,7 @@ const RegisterPage = () => {
       >
         <TermsContent />
       </Modal>
-
-      {/* Privacy Modal */}
+ 
       <Modal
         isOpen={showPrivacyModal}
         onClose={() => setShowPrivacyModal(false)}
@@ -554,5 +663,5 @@ const RegisterPage = () => {
     </div>
   );
 };
-
-export default RegisterPage; 
+ 
+export default RegisterPage;
