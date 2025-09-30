@@ -1,8 +1,11 @@
 import { motion } from 'framer-motion';
 import { BarChart3 } from 'lucide-react';
+import { useMemo } from 'react';
 
 const WorkHistory = ({ workorders }) => {
-  const completed = workorders.filter(order => order.status === "Completed");
+  const completed = useMemo(() => 
+    workorders.filter(order => order.status === "Completed"), [workorders]
+  );
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -33,31 +36,18 @@ const WorkHistory = ({ workorders }) => {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-          {completed.map((order) => (
-            <div key={order.workId} style={{
-              background: 'var(--color-white)',
-              border: '1px solid var(--color-border-light)',
-              borderRadius: '8px',
-              padding: '16px'
-            }}>
+          {completed.map(order => (
+            <div key={order.workId} style={{ background: 'var(--color-white)', border: '1px solid var(--color-border-light)', borderRadius: '8px', padding: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                 <h3 style={{ color: 'var(--color-text-dark)', margin: 0, fontSize: '1rem' }}>{order.desc}</h3>
-                <span style={{
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: '0.8rem',
-                  fontWeight: '500',
-                  background: 'var(--status-completed-bg)',
-                  color: 'var(--status-completed-text)'
-                }}>Done</span>
+                <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '500', background: 'var(--status-completed-bg)', color: 'var(--status-completed-text)' }}>Done</span>
               </div>
-              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Asset:</strong> { order.assetId.name}</p>
+              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Asset:</strong> {order.assetId.name}</p>
               <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Requested By:</strong> {order.userId.name}</p>
               <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Due On:</strong> {order.planId.nextMaintenanceDate}</p>
               <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Maintenance for:</strong> {order.frequency} days</p>
             </div>
           ))}
-          
         </div>
       )}
     </motion.div>

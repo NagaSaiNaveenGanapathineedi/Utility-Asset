@@ -1,70 +1,53 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../App';
 
 const SKILLS = ['', 'HVAC', 'Electrical', 'Network', 'Mechanical', 'Generator', 'Fire Safety'];
 const REGIONS = ['', 'North Zone', 'South Zone', 'East Zone', 'West Zone', 'Central Zone'];
 
-const ProfileInput = ({ label, name, value, onChange, disabled, type = 'text' }) => (
-  <div className="form-group">
-    <label style={{
-      display: 'block',
-      marginBottom: '8px',
-      fontSize: '14px',
-      fontWeight: 500,
-      color: 'var(--color-text-dark)'
-    }}>
-      {label} *
-    </label>
-    <input
-      name={name}
-      type={type}
-      value={value}
-      onChange={onChange}
-      disabled={disabled}
-      style={{
-        width: '100%',
-        padding: '12px 16px',
-        border: '2px solid var(--color-border-medium)',
-        borderRadius: '8px',
-        background: disabled ? 'var(--color-body-bg)' : 'var(--color-white)'
-      }}
-    />
-  </div>
-);
+const ProfileInput = ({ label, name, value, onChange, disabled, type = 'text' }) => {
+  const inputStyle = useMemo(() => ({
+    width: '100%',
+    padding: '12px 16px',
+    border: '2px solid var(--color-border-medium)',
+    borderRadius: '8px',
+    background: disabled ? 'var(--color-body-bg)' : 'var(--color-white)'
+  }), [disabled]);
+  
+  return (
+    <div className="form-group">
+      <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: 'var(--color-text-dark)' }}>
+        {label} *
+      </label>
+      <input name={name} type={type} value={value} onChange={onChange} disabled={disabled} style={inputStyle} />
+    </div>
+  );
+};
 
-const ProfileSelect = ({ label, name, value, onChange, disabled, options }) => (
-  <div className="form-group">
-    <label style={{
-      display: 'block',
-      marginBottom: '8px',
-      fontSize: '14px',
-      fontWeight: 500,
-      color: 'var(--color-text-dark)'
-    }}>
-      {label} *
-    </label>
-    <select
-      name={name}
-      value={value}
-      onChange={onChange}
-      disabled={disabled}
-      style={{
-        width: '100%',
-        padding: '12px 16px',
-        border: '2px solid var(--color-border-medium)',
-        borderRadius: '8px',
-        background: disabled ? 'var(--color-body-bg)' : 'var(--color-white)'
-      }}
-    >
-      {options.map(option => (
-        <option key={option} value={option}>
-          {option || `Select ${name}`}
-        </option>
-      ))}
-    </select>
-  </div>
-);
+const ProfileSelect = ({ label, name, value, onChange, disabled, options }) => {
+  const selectStyle = useMemo(() => ({
+    width: '100%',
+    padding: '12px 16px',
+    border: '2px solid var(--color-border-medium)',
+    borderRadius: '8px',
+    background: disabled ? 'var(--color-body-bg)' : 'var(--color-white)'
+  }), [disabled]);
+  
+  return (
+    <div className="form-group">
+      <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: 'var(--color-text-dark)' }}>
+        {label} *
+      </label>
+      <select name={name} value={value} onChange={onChange} disabled={disabled} style={selectStyle}>
+        {options.map(option => (
+          <option key={option} value={option}>
+            {option || `Select ${name}`}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
 
 const TechnicianProfile = () => {
   const { user: technician } = useAuth();
@@ -84,11 +67,11 @@ const TechnicianProfile = () => {
   const [form, setForm] = useState(initialFormState);
   const [isEditing, setIsEditing] = useState(false);
 
-  const handleChange = (e) => {
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     const nextValue = name === 'phno' ? value.replace(/\D/g, '') : value;
     setForm(prev => ({ ...prev, [name]: nextValue }));
-  };
+  }, []);
 
   const handleSave = async () => {
     if (!form.name || !form.skill || !form.region || !form.id || !form.email || !form.password || !form.pincode) {
@@ -129,11 +112,9 @@ const TechnicianProfile = () => {
     }
   };
 
-  const handleToggleEdit = () => {
-    if (!isEditing) {
-      setIsEditing(true);
-    }
-  };
+  const handleToggleEdit = useCallback(() => {
+    if (!isEditing) setIsEditing(true);
+  }, [isEditing]);
 
   return (
     <motion.div
@@ -167,12 +148,7 @@ const TechnicianProfile = () => {
           if (isEditing) handleSave();
         }}
       >
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '16px',
-          marginBottom: '16px'
-        }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '16px' }}>
           <ProfileInput label="Name" name="name" value={form.name} onChange={handleChange} disabled={!isEditing} />
           <ProfileInput label="Email" name="email" value={form.email} onChange={handleChange} disabled={!isEditing} />
           <ProfileInput label="Password" name="password" value={form.password} onChange={handleChange} disabled={!isEditing} />

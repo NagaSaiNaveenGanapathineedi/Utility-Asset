@@ -1,12 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
 import { styles } from './supervisorStyles';
 import StatusBadge from './StatusBadge';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../config/api';
+import { SKILLS, REGIONS, LOCATIONS, DEFAULT_PASSWORD } from '../../config/constants';
+import LoadingSpinner from './LoadingSpinner';
 
-export const ViewAssignments = ({ workOrders }) => {
-	let assigned = workOrders.filter(w => w.techId!==null);
+export const ViewAssignments = ({ workOrders = [], loading = false }) => {
+	const assigned = useMemo(() => workOrders.filter(w => w.techId != null), [workOrders]);
+	
+	if (loading) {
+		return <LoadingSpinner />;
+	}
 	return (
 		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
 			<h2 style={{ color: 'var(--color-text-dark)' }}>Technician Assignments</h2>
@@ -17,51 +24,84 @@ export const ViewAssignments = ({ workOrders }) => {
 				</div>
 			) : (
 				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-					{assigned.map((w) => (
-						<div key={w.workId} style={{ background: 'var(--color-white)', border: '1px solid var(--color-border-light)', borderRadius: '8px', padding: '16px' }}>
-							<div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-								<strong style={{ color: 'var(--color-text-dark)' }}>{"WO-"+w.workId}</strong>
-								<StatusBadge status={w.status} />
+					{assigned.map((w) => {
+						const assignmentDetails = useMemo(() => [
+							{ label: 'Asset', value: w.assetId?.name || 'N/A' },
+							{ label: 'Technician', value: w.techId?.name || 'N/A' },
+							{ label: 'Requested By', value: w.userId?.name || 'N/A' },
+							{ label: 'Plan', value: `PLN-${w.planId.planId}` },
+							{ label: 'Maintenance (days)', value: w.frequency }
+						], [w.assetId?.name, w.techId?.name, w.userId?.name, w.planId.planId, w.frequency]);
+
+						return (
+							<div key={w.workId} style={{ background: 'var(--color-white)', border: '1px solid var(--color-border-light)', borderRadius: '8px', padding: '16px' }}>
+								<div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+									<strong style={{ color: 'var(--color-text-dark)' }}>WO-{w.workId}</strong>
+									<StatusBadge status={w.status} />
+								</div>
+								<div style={{ marginBottom: '6px', color: 'var(--color-text-dark)' }}>{w.desc}</div>
+								<div style={{ fontSize: '13px', color: 'var(--color-text-medium)' }}>
+									{assignmentDetails.map(({ label, value }) => (
+										<div key={label}><strong>{label}:</strong> {value}</div>
+									))}
+								</div>
 							</div>
-							<div style={{ marginBottom: '6px', color: 'var(--color-text-dark)' }}>{w.desc}</div>
-							<div style={{ fontSize: '13px', color: 'var(--color-text-medium)' }}>
-								<div><strong>Asset : </strong> {w.assetId.name}</div>
-								<div><strong>Technician : </strong> {w.techId.name}</div>
-								<div><strong>Requested By : </strong> {w.userId.name} </div>
-								<div><strong>Plan : </strong> {'PLN-'+w.planId.planId}</div>
-								<div><strong>Maintenance</strong>(days)<b> :</b> {w.frequency} </div>
-							</div>
-						</div>
-					))}
+						);
+					})}
 				</div>
 			)}
 		</motion.div>
 	);
 };
 
-// Register Technician Component
-export const RegisterTechnician = ( {handleTabChange} ) => {
-	const [form, setForm] = useState({ name: '', email : '', password: 'Demo@uamt123', phno : '', region:'', pincode:'', location:'', skill: '', role :'technician' });
-	const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-	const handleSubmit = async (e) => {
-		setForm(prev => ({...prev,phno:parseInt(form.phno)}));
+export const RegisterTechnician = ({ handleTabChange, onDataChange }) => {
+	const initialForm = useMemo(() => ({
+		name: '',
+		email: '',
+		password: DEFAULT_PASSWORD,
+		phno: '',
+		region: '',
+		pincode: '',
+		location: '',
+		skill: '',
+		role: 'technician'
+	}), []);
+
+	const [form, setForm] = useState(initialForm);
+	const [loading, setLoading] = useState(false);
+	
+	const handleChange = useCallback((e) => {
+		setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+	}, []);
+	
+	const handleSubmit = useCallback(async (e) => {
 		e.preventDefault();
+		
 		if (!form.name || !form.email || !form.phno || !form.skill || !form.region || !form.location) {
-			alert('Please fill in all fields');
+			console.error('Validation failed: Missing required fields');
 			return;
 		}
-		try {
-			const response = await axios.post("http://localhost:9092/user/save",form);
-			if(response.status!==200) throw new Error('Failed to register Technician');
-			console.log(response);
-			handleTabChange("search-technician")
-		} catch (error) {
-			console.error("Error in adding technician : ", error);
+		
+		const phoneNumber = parseInt(form.phno, 10);
+		if (isNaN(phoneNumber)) {
+			console.error('Invalid phone number');
+			return;
 		}
-	};
-	const skills = ['', 'HVAC', 'Electrical', 'Network', 'Mechanical', 'Generator', 'Plumber'];
-	const regions = ['', 'North Zone', 'South Zone', 'East Zone', 'West Zone', 'Central Zone'];
-	const locations = ['', 'Chennai','Delhi','Mumbai','Kolkata','Hyderabad','Banglore','Amaravathi','Pune'];
+		
+		setLoading(true);
+		try {
+			const payload = { ...form, phno: phoneNumber };
+			await axios.post(API_ENDPOINTS.USER_SAVE, payload);
+			
+			setForm(initialForm);
+			onDataChange?.();
+			handleTabChange('search-technician');
+		} catch (error) {
+			console.error('Error registering technician:', error);
+		} finally {
+			setLoading(false);
+		}
+	}, [form, handleTabChange, onDataChange, initialForm]);
 
 	return (
 		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
@@ -86,19 +126,22 @@ export const RegisterTechnician = ( {handleTabChange} ) => {
 					<div className="form-group">
 						<label style={styles.label}>Skill *</label>
 						<select name="skill" value={form.skill} onChange={handleChange} style={styles.input}>
-							{skills.map(s => (<option key={s} value={s}>{s || 'Select skill'}</option>))}
+							<option value="">Select skill</option>
+							{SKILLS.map(s => (<option key={s} value={s}>{s}</option>))}
 						</select>
 					</div>
 					<div className="form-group">
 						<label style={styles.label}>Location *</label>
 						<select name="location" value={form.location} onChange={handleChange} style={styles.input}>
-							{locations.map(s => (<option key={s} value={s}>{s || 'Select location'}</option>))}
+							<option value="">Select location</option>
+							{LOCATIONS.map(s => (<option key={s} value={s}>{s}</option>))}
 						</select>
 					</div>
 					<div className="form-group">
 						<label style={styles.label}>Region *</label>
 						<select name="region" value={form.region} onChange={handleChange} style={styles.input}>
-							{regions.map(r => (<option key={r} value={r}>{r || 'Select region'}</option>))}
+							<option value="">Select region</option>
+							{REGIONS.map(r => (<option key={r} value={r}>{r}</option>))}
 						</select>
 					</div>
 					<div className="form-group">
@@ -107,21 +150,46 @@ export const RegisterTechnician = ( {handleTabChange} ) => {
 					</div>
 				</div>
 				<div style={{ display: 'flex', justifyContent: 'center' }}>
-					<motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" className="btn btn-primary" style={{ minWidth: '200px', padding: '12px 24px', fontSize: '16px', fontWeight: '600' }}>Register</motion.button>
+					<motion.button 
+						whileHover={{ scale: loading ? 1 : 1.02 }} 
+						whileTap={{ scale: loading ? 1 : 0.98 }} 
+						type="submit" 
+						disabled={loading}
+						className="btn btn-primary" 
+						style={{ 
+							minWidth: '200px', 
+							padding: '12px 24px', 
+							fontSize: '16px', 
+							fontWeight: '600',
+							opacity: loading ? 0.7 : 1,
+							cursor: loading ? 'not-allowed' : 'pointer'
+						}}
+					>
+						{loading ? 'Registering...' : 'Register'}
+					</motion.button>
 				</div>
 			</form>
 		</motion.div>
 	);
 };
 
-// Technician Search (similar to SearchAssets)
-export const SearchTechnicians = ({ technicians, handleTabChange }) => {
+export const SearchTechnicians = ({ technicians = [], handleTabChange, loading = false }) => {
 	const [searchTerm, setSearchTerm] = useState('');
-	const [filtered, setFiltered] = useState(technicians);
-	useEffect(() => {
+	
+	if (loading) {
+		return <LoadingSpinner />;
+	}
+	
+	const filtered = useMemo(() => {
 		let list = [...technicians];
-		if (searchTerm) list = list.filter(t => [t.id, t.name, t.skill, t.region].some(v => String(v).toLowerCase().includes(searchTerm.toLowerCase())));
-		setFiltered(list);
+		if (searchTerm) {
+			const term = searchTerm.toLowerCase();
+			list = list.filter(t => 
+				[t.id, t.name, t.skill, t.region]
+					.some(v => v && String(v).toLowerCase().includes(term))
+			);
+		}
+		return list;
 	}, [searchTerm, technicians]);
 	return (
 		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
@@ -151,41 +219,45 @@ export const SearchTechnicians = ({ technicians, handleTabChange }) => {
 				</div>
 			) : (
 				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px' }}>
-					{filtered.map(t => (
-						<motion.div
-							key={t.id}
-							initial={{ opacity: 0, y: 10, scale: 0.95 }}
-							animate={{ opacity: 1, y: 0, scale: 1 }}
-							transition={{ duration: 0.25 }}
-							style={{ background: 'var(--color-white)', border: '1px solid var(--color-border-light)', borderRadius: '12px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
-						>
-							<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
-								<div>
-									<h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-dark)' }}>{t.name}</h3>
-									<div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-										<span style={{ padding: '4px 8px', border: '1px solid var(--color-border-light)', borderRadius: '999px', fontSize: '12px', color: 'var(--color-text-medium)', background: 'var(--color-body-bg)' }}>ID: {t.id}</span>
-										<span style={{ padding: '4px 8px', border: '1px solid var(--color-border-light)', borderRadius: '999px', fontSize: '12px', color: 'var(--color-text-medium)', background: 'var(--color-body-bg)' }}>{t.skill}</span>
+					{filtered.map(t => {
+						const technicianDetails = useMemo(() => [
+							{ label: 'Technician ID', value: `TEC-${t.id}` },
+							{ label: 'Location', value: t.location },
+							{ label: 'Region', value: t.region }
+						], [t.id, t.location, t.region]);
+
+						return (
+							<motion.div
+								key={t.id}
+								initial={{ opacity: 0, y: 10, scale: 0.95 }}
+								animate={{ opacity: 1, y: 0, scale: 1 }}
+								transition={{ duration: 0.25 }}
+								style={{ background: 'var(--color-white)', border: '1px solid var(--color-border-light)', borderRadius: '12px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
+							>
+								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+									<div>
+										<h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-dark)' }}>{t.name}</h3>
+										<div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+											<span style={{ padding: '4px 8px', border: '1px solid var(--color-border-light)', borderRadius: '999px', fontSize: '12px', color: 'var(--color-text-medium)', background: 'var(--color-body-bg)' }}>ID: {t.id}</span>
+											<span style={{ padding: '4px 8px', border: '1px solid var(--color-border-light)', borderRadius: '999px', fontSize: '12px', color: 'var(--color-text-medium)', background: 'var(--color-body-bg)' }}>{t.skill}</span>
+										</div>
 									</div>
+									<span style={{ padding: '6px 10px', background: 'var(--color-body-bg)', color: 'var(--color-text-medium)', borderRadius: '999px', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.3px' }}>{t.region}</span>
 								</div>
-								<span style={{ padding: '6px 10px', background: 'var(--color-body-bg)', color: 'var(--color-text-medium)', borderRadius: '999px', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.3px' }}>{t.region}</span>
-							</div>
-							<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px 16px', marginBottom: '12px' }}>
-								{[
-									{ label: 'Technician ID', value: 'TEC-'+t.id },
-									{ label: 'Location', value: t.location },
-									{ label: 'Region', value: t.region }
-								].map(({ label, value }) => (
-									<div key={label} style={{ minWidth: 0 }}>
-										<div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px' }}>{label}</div>
-										<div style={{ fontSize: '14px', color: 'var(--color-text-dark)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</div>
-									</div>
-								))}
-							</div>
-							<div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-								<motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn btn-primary" style={{ flex: 1, padding: '10px 16px', fontSize: '0.9rem' }} onClick={() => handleTabChange("view-assignments")}>View Assignments</motion.button>
-							</div>
-						</motion.div>
-					))}
+								<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px 16px', marginBottom: '12px' }}>
+									{technicianDetails.map(({ label, value }) => (
+										<div key={label} style={{ minWidth: 0 }}>
+											<div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px' }}>{label}</div>
+											<div style={{ fontSize: '14px', color: 'var(--color-text-dark)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</div>
+										</div>
+									))}
+								</div>
+								<div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+									<motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn btn-primary" style={{ flex: 1, padding: '10px 16px', fontSize: '0.9rem' }} onClick={() => handleTabChange("view-assignments")}>View Assignments</motion.button>
+								</div>
+							</motion.div>
+						);
+					})}
 				</div>
 			)}
 		</motion.div>

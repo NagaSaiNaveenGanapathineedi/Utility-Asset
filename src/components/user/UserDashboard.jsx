@@ -1,107 +1,101 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../App';
-import Sidebar from './UserSidebar';
 import UserHeader from './UserHeader';
 import AssetInfo from './AssetInfo';
 import AssetRequestForm from './AssetRequestForm';
 import AssetHistory from './AssetHistory';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../config/api';
+import { Info, Plus, Activity } from 'lucide-react';
 
 const UserDashboard = () => {
   const { user } = useAuth();
-  //console.log(user);
-
-  const [assets,setAssets] = useState([]);
+  const [assets, setAssets] = useState([]);
   const [activeTab, setActiveTab] = useState('assetInfo');
-  const [userHistory, setuserHistory] = useState([]);
+  const [userHistory, setUserHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Scroll to top when tab changes
+  const fetchAssets = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(API_ENDPOINTS.ASSET_ALL);
+      setAssets(response.data || []);
+    } catch (error) {
+      console.error("Error fetching assets:", error);
+      setAssets([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchHistory = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const response = await axios.get(API_ENDPOINTS.WORKORDER_USER(user.id));
+      setUserHistory(response.data || []);
+    } catch (error) {
+      console.error("Error fetching user history:", error);
+      setUserHistory([]);
+    }
+  }, [user?.id]);
+
   useEffect(() => {
-    const scrollTimer = setTimeout(() => {
-      const dashboardContent = document.getElementById('user-dashboard-content');
-      if (dashboardContent) {
-        dashboardContent.scrollTo({
-          top: 0,
-          behavior: 'smooth'
-        });
-      }
-      
-      const mainContent = document.querySelector('.main-content-area');
-      if (mainContent && !dashboardContent) {
-        mainContent.scrollTo({
-          top: 0,
-          behavior: 'smooth'
-        });
-      }
-      
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    });
-
-    const fetchAssets = async () => {
-      try {
-        const response = await axios.get("http://localhost:9092/asset/all");
-        if (!response) throw new Error("Unable to fetch the data");
-        setAssets(response.data);
-      } catch (error) {
-        console.error("Error fetching assets:", error);
-        // Optionally show a user-friendly message
-      }
-    };
-
-    const fetchHistory = async () => {
-      try {
-        const response = await axios.get("http://localhost:9092/workorder/user/"+user.id);
-        if (!response) throw new Error("Unable to fetch the data");
-        setuserHistory(response.data);
-        // console.log(response.data);
-        // console.log(userHistory);
-      } catch (error) {
-        console.error("Error fetching assets:", error);
-        // Optionally show a user-friendly message
-      }
-    };
-
     fetchAssets();
     fetchHistory();
-    return () => clearTimeout(scrollTimer);
+  }, [fetchAssets, fetchHistory]);
 
-  }, [activeTab, user.id]); {/*activeTab*/}
+  const handleTabChange = useCallback((tabId) => setActiveTab(tabId), []);
 
-  const handleTabChange = (tabId) => {
-    setActiveTab(tabId);
-  };
+  const renderActiveTab = useMemo(() => {
+    if (loading) return <div>Loading...</div>;
+    
+    const tabComponents = {
+      'assetInfo': () => <AssetInfo assets={assets} user={user} />,
+      'assetRequest': () => <AssetRequestForm assets={assets} user={user} />,
+      'assetHistory': () => <AssetHistory userHistory={userHistory} user={user} />
+    };
+    
+    return (tabComponents[activeTab] || tabComponents['assetInfo'])();
+  }, [activeTab, assets, user, userHistory, loading]);
 
-  const renderActiveTab = () => {
-    switch (activeTab) {
-      case 'assetInfo':
-        return <AssetInfo assets={assets} user={user} />;
-      case 'assetRequest':
-        return (
-          <AssetRequestForm
-            assets = {assets}
-            user={user}
-          />
-        );
-      case 'assetHistory':
-        return <AssetHistory userHistory={userHistory} user={user} />;
-      default:
-        return <AssetInfo />;
-    }
-  };
+  const menuItems = useMemo(() => [
+    { id: 'assetInfo', label: 'Asset Information', icon: Info },
+    { id: 'assetRequest', label: 'Asset Request', icon: Plus },
+    { id: 'assetHistory', label: 'Asset History', icon: Activity }
+  ], []);
 
   return (
     <div className="app-container">
-      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange}/>
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <h1 style={{ color: 'var(--status-completed-text)', fontSize: '1.5rem', fontWeight: '700', margin: 0 }}>User Panel</h1>
+        </div>
+        <nav className="sidebar-nav">
+          <ul>
+            {menuItems.map(({ id, label, icon: Icon }) => (
+              <li key={id}>
+                <button
+                  onClick={() => handleTabChange(id)}
+                  className={activeTab === id ? 'active' : ''}
+                  style={{ width: '100%', textAlign: 'left', backgroundColor: activeTab === id ? 'var(--color-active-dark-bg)' : 'transparent', color: 'var(--color-text-on-dark)', border: 'none', padding: '16px 25px', cursor: 'pointer', fontSize: '1em', fontWeight: activeTab === id ? '600' : '500', transition: 'background-color 0.3s ease, color 0.3s ease', display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}
+                  onMouseEnter={(e) => { if (activeTab !== id) e.target.style.backgroundColor = 'var(--color-hover-dark-bg)'; }}
+                  onMouseLeave={(e) => { if (activeTab !== id) e.target.style.backgroundColor = 'transparent'; }}
+                >
+                  {activeTab === id && (
+                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', backgroundColor: 'var(--color-light-primary)' }} />
+                  )}
+                  <Icon size={18} />
+                  {label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </aside>
       
       <div className="main-content-wrapper">
         <UserHeader />
-        
-        <main className="main-content-area" id="user-dashboard-content">
-          {renderActiveTab()}
-        </main>
+        <main className="main-content-area" id="user-dashboard-content">{renderActiveTab}</main>
       </div>
     </div>
   );

@@ -1,29 +1,8 @@
 import { motion } from 'framer-motion';
 import { useState, useMemo, useCallback } from 'react';
 import axios from 'axios';
-
-// Moved styles outside to prevent recreation on every render
-const inputStyle = {
-  width: '100%',
-  padding: '12px 16px',
-  border: '2px solid var(--color-border-medium)',
-  borderRadius: '8px',
-  fontSize: '14px',
-  fontWeight: '400',
-  color: 'var(--color-text-dark)',
-  backgroundColor: 'var(--color-white)',
-  transition: 'all 0.2s ease',
-  fontFamily: 'inherit',
-  outline: 'none'
-};
-
-const labelStyle = {
-  display: 'block',
-  marginBottom: '8px',
-  fontSize: '14px',
-  fontWeight: '500',
-  color: 'var(--color-text-dark)'
-};
+import { API_ENDPOINTS } from '../../config/api';
+import { inputStyle, labelStyle } from './styles';
 
 const initialFilteredAssetState = {
   id: null,
@@ -68,18 +47,16 @@ const AssetRequestForm = ({ assets, user }) => {
   }, [setFilteredAsset]);
 
   const handleSelectAsset = useCallback((asset) => {
-    //console.log("Selected asset:");
     setFilteredAsset(asset);
-    setWorkOrder({
-      ...workorder,
+    setWorkOrder(prev => ({
+      ...prev,
       assetId: asset.id,
       frequency: parseInt(asset.frequency, 10),
       requestedDate: new Date().toLocaleDateString('en-CA'),
       status: "Not Assigned"
-    });
+    }));
     setShowSuggestions(false);
-    //console.log(workorder);
-  }, [workorder, setWorkOrder]);
+  }, []);
 
   const filteredSuggestions = useMemo(() => {
     const query = (filteredAsset.name || '').trim().toLowerCase();
@@ -93,35 +70,35 @@ const AssetRequestForm = ({ assets, user }) => {
     //console.log(workorder);
 
     if (!workorder.assetId || !workorder.frequency) {
-      alert('Please select an asset and a frequency plan.');
+      console.error('Validation failed: Missing asset or frequency');
       return;
     }
 
     try {
-      const requestPayload = { ...workorder };
-      //console.log(requestPayload);
-      const response = await axios.post('http://localhost:9092/workorder/save', requestPayload);
-      if (response.status === 200 || response.status === 201) {
-        alert('Asset request submitted successfully!');
-        setWorkOrder({
-          planId: null,
-          userId: null,
-          techId: null,
-          assetId: null,
-          description: null,
-          requestedDate: null,
-          status: "Not Assigned",
-          frequency: null
-        });
-        setFilteredAsset(initialFilteredAssetState);
-      } else {
-        alert('Failed to submit asset request.');
-      }
+      const response = await axios.post(API_ENDPOINTS.WORKORDER_SAVE, workorder);
+      
+      setWorkOrder({
+        planId: null,
+        userId: user.id,
+        techId: null,
+        assetId: null,
+        description: null,
+        requestedDate: null,
+        status: "Not Assigned",
+        frequency: null
+      });
+      setFilteredAsset(initialFilteredAssetState);
     } catch (error) {
       console.error("Error submitting asset request:", error);
-      alert('An error occurred while submitting the request.');
+      if (error.response?.status === 400) {
+        console.error('Invalid request data');
+      } else if (error.response?.status >= 500) {
+        console.error('Server error occurred');
+      } else {
+        console.error('Network error occurred');
+      }
     }
-  }, [workorder, setWorkOrder, setFilteredAsset]);
+  }, [workorder, user.id]);
 
   return (
     <motion.div

@@ -18,7 +18,7 @@ const getFrequencyString = (days) => {
 const AssetHistory = ({ userHistory }) => {
   const records = useMemo(() => userHistory || [], [userHistory]);
   // console.log(userHistory);
-  const presentRecords = useMemo(() => 
+  const pendingRequests = useMemo(() => 
     records.filter(r => r.status === 'Not Assigned'),
     [records]
   );
@@ -54,7 +54,7 @@ const AssetHistory = ({ userHistory }) => {
         }}>
           Your Asset Requests
         </h3>
-        {presentRecords.length === 0 ? (
+        {pendingRequests.length === 0 ? (
           <div style={{ 
             textAlign: 'center',
             padding: '40px',
@@ -74,7 +74,7 @@ const AssetHistory = ({ userHistory }) => {
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '15px' }}>
-            {presentRecords.map((request) => (
+            {pendingRequests.map((request) => (
               <div key={request.workId} style={{
                 background: 'var(--color-white)',
                 border: '1px solid var(--color-border-light)',
@@ -117,8 +117,7 @@ const AssetHistory = ({ userHistory }) => {
                     {[
                       { label: 'Asset ID', value: `AST-${request.assetId?.id}` || 'N/A' },
                       { label: 'Frequency Plan', value: getFrequencyString(request.frequency) || 'N/A' },
-                      { label: 'Status', value: request.status || 'N/A' },
-                      { label: 'Submitted', value: request.requestedDate || 'N/A' },
+                      { label: 'Requested Date', value: request.requestedDate || 'N/A' },
                       { label: 'Submitted By', value: request.userId?.name || 'N/A' },
                       { label: 'Due Date', value: request.planId?.nextMaintenanceDate || 'N/A' }
                     ].map(({ label, value }) => (
@@ -249,10 +248,9 @@ const AssetHistory = ({ userHistory }) => {
                   {[
                     { label: 'Asset Name', value: `AST-${asset.assetId?.name}` || 'N/A' },
                     { label: 'Asset Type', value: asset.assetId?.type || 'N/A' },
-                    { label: 'Status', value: asset.status || 'N/A' },
                     { label: 'Requested Date', value: asset.requestedDate || 'N/A' },
                     { label: 'Technician', value: asset.techId?.name || 'N/A' },
-                    { label: 'Maintenance Date', value: asset.planId?.nextMaintenanceDate || 'N/A' },
+                    { label: 'Maintenance Date', value: asset.planId?.nextMaintenanceDate || 'N/A' }
                   ].map(({ label, value }) => (
                     <div key={label}>
                       <span style={{ 
