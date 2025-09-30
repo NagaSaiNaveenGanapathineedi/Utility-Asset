@@ -15,18 +15,18 @@ export const AssetHistory = ({ workOrders }) => {
 			) : (
 				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
 					{history.map((h) => (
-						<div key={h.workId} style={{ border: '1px solid var(--color-border-light)', borderRadius: '8px', padding: '16px' }}>
+						<div key={h?.workId} style={{ border: '1px solid var(--color-border-light)', borderRadius: '8px', padding: '16px' }}>
 							<div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-								<strong>{h.assetId.name}</strong>
-								<StatusBadge status={h.status} />
+								<strong>{h?.assetId?.name}</strong>
+								<StatusBadge status={h?.status} />
 							</div>
 							{/* <div style={{ color: 'var(--color-text-dark)', marginBottom: '8px', whiteSpace: 'normal', overflowWrap: 'break-word' }}>
 								{h.description}
 							</div> */}
 							<div style={{ fontSize: '13px', color: 'var(--color-text-medium)', display: 'grid', gap: '4px' }}>
-								<div><strong>Requested User :</strong> {h.userId.name}</div>
-								<div><strong>Assigned Technician :</strong> {h.techId.name || 'Un Assigned'}</div>
-								<div><strong>Maintenance till :</strong> {h.planId.nextMaintenanceDate}</div>
+								<div><strong>Requested User :</strong> {h?.userId?.name}</div>
+								<div><strong>Assigned Technician :</strong> {h?.techId?.name || 'Un Assigned'}</div>
+								<div><strong>Maintenance till :</strong> {h?.planId?.nextMaintenanceDate}</div>
 							</div>
 						</div>
 					))}
@@ -39,11 +39,11 @@ export const AssetHistory = ({ workOrders }) => {
 export const TechnicianSummary = ({ workOrders }) => {
 	const summary = workOrders.reduce((acc, w) => {
 		if (!w.techId) return acc;
-		const key = w.techId.id || w.techId.name;
+		const key = w?.techId?.id || w?.techId?.name;
 		if (!acc[key]) {
 			acc[key] = {
-				assignedTo: w.techId.name,
-				assignedToId: w.techId.id || '',
+				assignedTo: w?.techId?.name,
+				assignedToId: w?.techId?.id || '',
 				total: 0,
 				inProgress: 0,
 				done: 0,

@@ -10,9 +10,15 @@ import WorkOrders from './WorkOrder';
 import WorkHistory from './WorkHistory';
 import ReportsOverview from './Reports';
 import TechnicianProfile from './Profile';
+import axios from 'axios';
+import { useAuth } from '../../App';
+
 
 const TechnicianDashboard = () => {
-  const [activeTab, setActiveTab] = useState('workOrders');
+  const [activeTab, setActiveTab] = useState('reports');
+  const { user: technician } = useAuth();
+  console.log(technician.id);
+  const [workorder, setworkorder] = useState([]);
 
   // Scroll to top when tab changes
   useEffect(() => {
@@ -30,8 +36,20 @@ const TechnicianDashboard = () => {
       });
     }, 50);
 
+    const fetchTechnicianRecords = async () =>{
+      try {
+        const response = await axios.get("http://localhost:9092/workorder/technician/"+technician.id);
+        if(response.status !== 200) return new Error("Failed to fetch technician records");
+        console.log(response.data);
+        setworkorder([...response.data]);
+      } catch (error) {
+        console.log("Erro in fetching technician work records",error);
+      }
+    }
+
+    fetchTechnicianRecords();
     return () => clearTimeout(scrollTimer);
-  }, [activeTab]);
+  }, [activeTab, technician.id]);
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -40,13 +58,13 @@ const TechnicianDashboard = () => {
   const renderActiveTab = () => {
     switch (activeTab) {
       case 'workOrders':
-        return <WorkOrders />;
+        return <WorkOrders workorders={workorder} />;
       case 'reports':
-        return <ReportsOverview />;
+        return <ReportsOverview workorders={workorder} />;
       case 'history':
-        return <WorkHistory />;
+        return <WorkHistory workorders={workorder} />;
       case 'profile':
-        return <TechnicianProfile />;
+        return <TechnicianProfile technician={technician} />;
       default:
         return <WorkOrders />;
     }

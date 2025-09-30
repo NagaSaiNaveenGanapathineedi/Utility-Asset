@@ -1,6 +1,4 @@
 import { motion } from 'framer-motion';
-import { useAppData } from '../../context/AppDataContext.jsx';
-import { useAuth } from '../../App';
 import {
   Wrench,
   Clock,
@@ -8,15 +6,10 @@ import {
 } from 'lucide-react';
 
 // Reports Overview (moved stats here)
-const ReportsOverview = () => {
-  const { workOrders } = useAppData();
-  const { user } = useAuth();
-  const techId = user?.employeeId || user?.technicianId;
-  const techName = user?.name;
-  const mine = workOrders.filter(o => (o.assignedToId && techId && o.assignedToId === techId) || (o.assignedTo && techName && o.assignedTo === techName));
-  const pendingCount = mine.filter(o => o.status === 'Open' || o.status === 'Assigned').length;
-  const inProgressCount = mine.filter(o => o.status === 'In Progress').length;
-  const doneTodayCount = mine.filter(o => o.status === 'Done').length; // simplistic
+const ReportsOverview = ({ workorders }) => {
+  const pendingCount = workorders.filter(o => o.status === 'Assigned').length;
+  const inProgressCount = workorders.filter(o => o.status === 'Pending').length;
+  const doneTodayCount = workorders.filter(o => o.status === 'Completed').length; // simplistic
   const stats = [
     { icon: Clock, label: 'Yet to Start', value: String(pendingCount), color: 'var(--status-open-text)' },
     { icon: Wrench, label: 'In Progress', value: String(inProgressCount), color: 'var(--status-in-progress-text)' },
@@ -57,6 +50,18 @@ const ReportsOverview = () => {
             </p>
           </div>
         ))}
+      </div>
+      <div>
+        <h2 style={{ color: 'var(--color-text-dark)' }}>Recent Tasks</h2>
+        <div>
+          {
+            workorders.length !== 0 ? workorders.map(order => (
+              <div key={order.workId}>
+          <p style={{ fontSize: "1.05rem", fontStyle: "italic", color: "grey", fontFamily: "'Lucida Sans', 'Lucida Grande', sans-serif", marginBottom: "1rem" }}>{order.userId.name} requested {order.assetId.name} on {order.requestedDate}.</p>
+              </div>
+            )) : <p>No work orders available</p>
+          }
+        </div>
       </div>
     </motion.div>
   );

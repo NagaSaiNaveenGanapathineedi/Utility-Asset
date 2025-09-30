@@ -35,11 +35,23 @@ const initialFilteredAssetState = {
   type: null
 };
 
-const AssetRequestForm = ({ assets, workorder, setWorkOrder }) => {
+const AssetRequestForm = ({ assets, user }) => {
+  //console.log(user);
+  const [workorder, setWorkOrder] = useState({
+      planId : null,
+      userId : user.id,
+      techId : null,
+      assetId : null,
+      description : null,
+      requestedDate : null,
+      status : "Not Assigned",
+      frequency : null
+    });
   const [filteredAsset, setFilteredAsset] = useState(initialFilteredAssetState);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const handleInputChange = useCallback((e) => {
+    //console.log("input changed");
     const { name, value } = e.target;
     if (name === "description" || name === "frequency") {
       setWorkOrder(prev => ({
@@ -52,19 +64,21 @@ const AssetRequestForm = ({ assets, workorder, setWorkOrder }) => {
         [name]: value
       }));
     }
-  }, [setWorkOrder, setFilteredAsset]);
+    //console.log(workorder, filteredAsset);
+  }, [setFilteredAsset]);
 
   const handleSelectAsset = useCallback((asset) => {
+    //console.log("Selected asset:");
     setFilteredAsset(asset);
     setWorkOrder({
       ...workorder,
       assetId: asset.id,
-      userId: 1,
       frequency: parseInt(asset.frequency, 10),
       requestedDate: new Date().toLocaleDateString('en-CA'),
       status: "Not Assigned"
     });
     setShowSuggestions(false);
+    //console.log(workorder);
   }, [workorder, setWorkOrder]);
 
   const filteredSuggestions = useMemo(() => {
@@ -75,8 +89,8 @@ const AssetRequestForm = ({ assets, workorder, setWorkOrder }) => {
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
-    console.log(filteredAsset);
-    console.log(workorder);
+    //console.log(filteredAsset);
+    //console.log(workorder);
 
     if (!workorder.assetId || !workorder.frequency) {
       alert('Please select an asset and a frequency plan.');
@@ -85,7 +99,7 @@ const AssetRequestForm = ({ assets, workorder, setWorkOrder }) => {
 
     try {
       const requestPayload = { ...workorder };
-      console.log(requestPayload);
+      //console.log(requestPayload);
       const response = await axios.post('http://localhost:9092/workorder/save', requestPayload);
       if (response.status === 200 || response.status === 201) {
         alert('Asset request submitted successfully!');

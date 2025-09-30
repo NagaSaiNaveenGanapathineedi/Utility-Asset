@@ -3,10 +3,8 @@ import {
   Plus,
   Activity
 } from 'lucide-react';
-import { useAuth } from '../../App';
 
 const UserSidebar = ({ activeTab, setActiveTab }) => {
-  const { user } = useAuth();
 
   return (
     <aside className="sidebar">
@@ -48,4 +46,4 @@ const UserSidebar = ({ activeTab, setActiveTab }) => {
   );
 };
 
-export default UserSidebar; 
+export default UserSidebar;

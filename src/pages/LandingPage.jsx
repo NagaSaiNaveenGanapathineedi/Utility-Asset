@@ -10,10 +10,6 @@ import {
   MapPin,
   ArrowRight,
   Wrench,
-  Mail,
-  Phone,
-  MapPin as LocationIcon,
-  Building
 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -396,4 +392,4 @@ const LandingPage = () => {
   );
 };
 
-export default LandingPage; 
+export default LandingPage;

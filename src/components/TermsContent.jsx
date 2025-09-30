@@ -8,7 +8,7 @@ const TermsContent = () => {
           Last Updated: {new Date().toLocaleDateString()}
         </p>
         <p style={{ margin: '0 0 16px 0' }}>
-          Welcome to the Utility Asset Maintenance Tracker ("Service"). These Terms and Conditions ("Terms") govern your use of our utility asset management platform operated by our company ("we," "us," or "our").
+          Welcome to the Utility Asset Maintenance Tracker (&quot;Service&quot;). These Terms and Conditions (&quot;Terms&quot;) govern your use of our utility asset management platform operated by our company (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;).
         </p>
       </div>
 
@@ -183,4 +183,4 @@ const TermsContent = () => {
   );
 };
 
-export default TermsContent; 
+export default TermsContent;

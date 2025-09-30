@@ -16,8 +16,8 @@ const getFrequencyString = (days) => {
 };
 
 const AssetHistory = ({ userHistory }) => {
-  const records = userHistory || [];
-  console.log(userHistory);
+  const records = useMemo(() => userHistory || [], [userHistory]);
+  // console.log(userHistory);
   const presentRecords = useMemo(() => 
     records.filter(r => r.status === 'Not Assigned'),
     [records]
@@ -286,4 +286,4 @@ const AssetHistory = ({ userHistory }) => {
   );
 };
 
-export default AssetHistory; 
+export default AssetHistory;
