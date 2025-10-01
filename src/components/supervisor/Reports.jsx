@@ -3,7 +3,7 @@ import StatusBadge from './StatusBadge';
 import LoadingSpinner from './LoadingSpinner';
 
 
-export const AssetHistory = ({ workOrders, loading = false }) => {
+export const AssetHistory = ({ workOrders, loading = false, setApiCallMade }) => {
 	const history = workOrders.filter(wo=>wo.techId!=null);
 	
 	if (loading) {
@@ -35,9 +35,6 @@ export const AssetHistory = ({ workOrders, loading = false }) => {
 								<strong>{h?.assetId?.name}</strong>
 								<StatusBadge status={h?.status} />
 							</div>
-							{/* <div style={{ color: 'var(--color-text-dark)', marginBottom: '8px', whiteSpace: 'normal', overflowWrap: 'break-word' }}>
-								{h.description}
-							</div> */}
 							<div style={{ fontSize: '13px', color: 'var(--color-text-medium)', display: 'grid', gap: '4px' }}>
 								<div><strong>Requested User :</strong> {h?.userId?.name}</div>
 								<div><strong>Assigned Technician :</strong> {h?.techId?.name || 'Un Assigned'}</div>
@@ -51,7 +48,7 @@ export const AssetHistory = ({ workOrders, loading = false }) => {
 	);
 };
 
-export const TechnicianSummary = ({ workOrders, loading = false }) => {
+export const TechnicianSummary = ({ workOrders, loading = false, setApiCallMade }) => {
 	if (loading) {
 		return <LoadingSpinner />;
 	}
@@ -64,16 +61,16 @@ export const TechnicianSummary = ({ workOrders, loading = false }) => {
 				assignedTo: w?.techId?.name,
 				assignedToId: w?.techId?.id || '',
 				total: 0,
-				inProgress: 0,
-				done: 0,
+				Pending: 0,
+				Completed: 0,
 				details: [],
 			};
 		}
 		acc[key].total += 1;
-		if (w.status === 'Done') {
-			acc[key].done += 1;
+		if (w.status === 'Completed') {
+			acc[key].Completed += 1;
 		} else {
-			acc[key].inProgress += 1;
+			acc[key].Pending += 1;
 		}
 
 		const detail = {};
@@ -116,8 +113,8 @@ export const TechnicianSummary = ({ workOrders, loading = false }) => {
 							<div style={{ marginBottom: '8px', color: 'var(--color-text-dark)', fontWeight: 700 }}>{e.assignedTo} <span style={{ opacity: 0.6, fontWeight: 500 }}>({"TEC-"+e.assignedToId || '—'})</span></div>
 							<div style={{ display: 'flex', gap: '10px', fontSize: '14px', color: 'var(--color-text-medium)' }}>
 								<div><strong>Total:</strong> {e.total}</div>
-								<div><strong>In Progress:</strong> {e.inProgress}</div>
-								<div><strong>Completed:</strong> {e.done}</div>
+								<div><strong>In Progress:</strong> {e.Pending}</div>
+								<div><strong>Completed:</strong> {e.Completed}</div>
 							</div>
 							<div style={{ marginTop: '10px', fontSize: '14px', color: 'var(--color-text-medium)' }}>
 								<strong>Details:<br/></strong>

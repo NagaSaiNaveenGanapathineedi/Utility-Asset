@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { FREQUENCY_MAP } from '../../config/constants';
 import LoadingSpinner from './LoadingSpinner';
 
-export const MaintenancePlan = ({ plans = [], loading = false }) => {
+export const MaintenancePlan = ({ plans = [], loading = false, setApiCallMade }) => {
 	const getFrequencyLabel = useMemo(() => (frequency) => {
         return FREQUENCY_MAP[frequency] || 'Weekly';
     }, []);

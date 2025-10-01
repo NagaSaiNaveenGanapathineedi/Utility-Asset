@@ -34,6 +34,7 @@ const SupervisorDashboard = () => {
 	const [plans, setPlans] = useState([]);
 	const [dataVersion, setDataVersion] = useState(0);
 	const [loading, setLoading] = useState(false);
+	const [apiCallMade, setApiCallMade] = useState(false);
 
 	const fetchData = useCallback(async () => {
 		setLoading(true);
@@ -58,7 +59,7 @@ const SupervisorDashboard = () => {
 
 	useEffect(() => {
 		fetchData();
-	}, [fetchData, dataVersion]);
+	}, [fetchData, dataVersion, apiCallMade]);
 
 	const toggleMenu = useCallback((menuKey) => {
 		setExpandedMenus(prev => {
@@ -88,15 +89,15 @@ const SupervisorDashboard = () => {
 		if (loading) return <LoadingSpinner />;
 		
 		const tabComponents = {
-			'asset-registration': () => <AssetRegistration handleTabChange={handleTabChange} onDataChange={handleDataChange} />,
-			'search-assets': () => <SearchAssets assets={assets} onDataChange={handleDataChange} />,
-			'assign-work': () => <AssignWork workOrders={workOrders} technicians={technicians} onDataChange={handleDataChange} />,
-			'view-assignments': () => <ViewAssignments workOrders={workOrders} />,
-			'asset-history': () => <AssetHistory workOrders={workOrders} />,
-			'technician-summary': () => <TechnicianSummary workOrders={workOrders} />,
-			'search-technician': () => <SearchTechnicians technicians={technicians} handleTabChange={handleTabChange} />,
-			'register-technician': () => <RegisterTechnician handleTabChange={handleTabChange} onDataChange={handleDataChange} />,
-			'maintenance-plan': () => <MaintenancePlan plans={plans} />
+			'asset-registration': () => <AssetRegistration handleTabChange={handleTabChange} onDataChange={handleDataChange} setApiCallMade={setApiCallMade} />,
+			'search-assets': () => <SearchAssets assets={assets} onDataChange={handleDataChange} setApiCallMade={setApiCallMade} />,
+			'assign-work': () => <AssignWork workOrders={workOrders} technicians={technicians} onDataChange={handleDataChange} setApiCallMade={setApiCallMade} />,
+			'view-assignments': () => <ViewAssignments workOrders={workOrders} setApiCallMade={setApiCallMade} />,
+			'asset-history': () => <AssetHistory workOrders={workOrders} setApiCallMade={setApiCallMade} />,
+			'technician-summary': () => <TechnicianSummary workOrders={workOrders} setApiCallMade={setApiCallMade} />,
+			'search-technician': () => <SearchTechnicians technicians={technicians} handleTabChange={handleTabChange} setApiCallMade={setApiCallMade} />,
+			'register-technician': () => <RegisterTechnician handleTabChange={handleTabChange} onDataChange={handleDataChange} setApiCallMade={setApiCallMade} />,
+			'maintenance-plan': () => <MaintenancePlan plans={plans} setApiCallMade={setApiCallMade} />
 		};
 		
 		return (tabComponents[activeTab] || tabComponents['search-assets'])();

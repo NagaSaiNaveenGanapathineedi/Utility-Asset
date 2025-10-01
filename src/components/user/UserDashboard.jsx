@@ -4,9 +4,30 @@ import UserHeader from './UserHeader';
 import AssetInfo from './AssetInfo';
 import AssetRequestForm from './AssetRequestForm';
 import AssetHistory from './AssetHistory';
+import LoadingSpinner from './LoadingSpinner';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../../config/api';
 import { Info, Plus, Activity } from 'lucide-react';
+import '../styles/components.css';
+
+const MENU_ITEMS = [
+  { id: 'assetInfo', label: 'Asset Information', icon: Info },
+  { id: 'assetRequest', label: 'Asset Request', icon: Plus },
+  { id: 'assetHistory', label: 'Asset History', icon: Activity }
+];
+
+const SidebarNavItem = ({ item, isActive, onClick }) => (
+  <li>
+    <button
+      onClick={() => onClick(item.id)}
+      className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
+    >
+      {isActive && <div className="active-indicator" />}
+      <item.icon size={18} />
+      {item.label}
+    </button>
+  </li>
+);
 
 const UserDashboard = () => {
   const { user } = useAuth();
@@ -14,80 +35,60 @@ const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('assetInfo');
   const [userHistory, setUserHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [apiCallMade, setApiCallMade] = useState(false);
 
-  const fetchAssets = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get(API_ENDPOINTS.ASSET_ALL);
-      setAssets(response.data || []);
+      const [assetsRes, historyRes] = await Promise.all([
+        axios.get(API_ENDPOINTS.ASSET_ALL),
+        user?.id ? axios.get(API_ENDPOINTS.WORKORDER_USER(user.id)) : Promise.resolve({ data: [] })
+      ]);
+      
+      setAssets(assetsRes.data || []);
+      setUserHistory(historyRes.data || []);
     } catch (error) {
-      console.error("Error fetching assets:", error);
+      console.error("Error fetching data:", error);
       setAssets([]);
+      setUserHistory([]);
     } finally {
       setLoading(false);
-    }
-  }, []);
-
-  const fetchHistory = useCallback(async () => {
-    if (!user?.id) return;
-    try {
-      const response = await axios.get(API_ENDPOINTS.WORKORDER_USER(user.id));
-      setUserHistory(response.data || []);
-    } catch (error) {
-      console.error("Error fetching user history:", error);
-      setUserHistory([]);
     }
   }, [user?.id]);
 
   useEffect(() => {
-    fetchAssets();
-    fetchHistory();
-  }, [fetchAssets, fetchHistory]);
+    fetchData();
+  }, [fetchData, apiCallMade]);
 
   const handleTabChange = useCallback((tabId) => setActiveTab(tabId), []);
 
   const renderActiveTab = useMemo(() => {
-    if (loading) return <div>Loading...</div>;
+    if (loading) return <LoadingSpinner />;
     
     const tabComponents = {
-      'assetInfo': () => <AssetInfo assets={assets} user={user} />,
-      'assetRequest': () => <AssetRequestForm assets={assets} user={user} />,
-      'assetHistory': () => <AssetHistory userHistory={userHistory} user={user} />
+      assetInfo: <AssetInfo assets={assets} user={user} setApiCallMade={setApiCallMade} />,
+      assetRequest: <AssetRequestForm assets={assets} user={user} setApiCallMade={setApiCallMade} />,
+      assetHistory: <AssetHistory userHistory={userHistory} user={user} setApiCallMade={setApiCallMade} />
     };
     
-    return (tabComponents[activeTab] || tabComponents['assetInfo'])();
+    return tabComponents[activeTab] || tabComponents.assetInfo;
   }, [activeTab, assets, user, userHistory, loading]);
-
-  const menuItems = useMemo(() => [
-    { id: 'assetInfo', label: 'Asset Information', icon: Info },
-    { id: 'assetRequest', label: 'Asset Request', icon: Plus },
-    { id: 'assetHistory', label: 'Asset History', icon: Activity }
-  ], []);
 
   return (
     <div className="app-container">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <h1 style={{ color: 'var(--status-completed-text)', fontSize: '1.5rem', fontWeight: '700', margin: 0 }}>User Panel</h1>
+          <h1 className="sidebar-title">User Panel</h1>
         </div>
         <nav className="sidebar-nav">
           <ul>
-            {menuItems.map(({ id, label, icon: Icon }) => (
-              <li key={id}>
-                <button
-                  onClick={() => handleTabChange(id)}
-                  className={activeTab === id ? 'active' : ''}
-                  style={{ width: '100%', textAlign: 'left', backgroundColor: activeTab === id ? 'var(--color-active-dark-bg)' : 'transparent', color: 'var(--color-text-on-dark)', border: 'none', padding: '16px 25px', cursor: 'pointer', fontSize: '1em', fontWeight: activeTab === id ? '600' : '500', transition: 'background-color 0.3s ease, color 0.3s ease', display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}
-                  onMouseEnter={(e) => { if (activeTab !== id) e.target.style.backgroundColor = 'var(--color-hover-dark-bg)'; }}
-                  onMouseLeave={(e) => { if (activeTab !== id) e.target.style.backgroundColor = 'transparent'; }}
-                >
-                  {activeTab === id && (
-                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', backgroundColor: 'var(--color-light-primary)' }} />
-                  )}
-                  <Icon size={18} />
-                  {label}
-                </button>
-              </li>
+            {MENU_ITEMS.map((item) => (
+              <SidebarNavItem
+                key={item.id}
+                item={item}
+                isActive={activeTab === item.id}
+                onClick={handleTabChange}
+              />
             ))}
           </ul>
         </nav>
@@ -95,7 +96,9 @@ const UserDashboard = () => {
       
       <div className="main-content-wrapper">
         <UserHeader />
-        <main className="main-content-area" id="user-dashboard-content">{renderActiveTab}</main>
+        <main className="main-content-area" id="user-dashboard-content">
+          {renderActiveTab}
+        </main>
       </div>
     </div>
   );

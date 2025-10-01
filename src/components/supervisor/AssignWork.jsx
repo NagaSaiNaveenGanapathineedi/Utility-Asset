@@ -5,7 +5,7 @@ import axios from 'axios';
 import { API_ENDPOINTS } from '../../config/api';
 import { FREQUENCY_MAP } from '../../config/constants';
 
-export const AssignWork = ({ workOrders, technicians, onAssignmentComplete, handleTabChange, onDataChange }) => {
+export const AssignWork = ({ workOrders, technicians, onAssignmentComplete, handleTabChange, onDataChange, setApiCallMade }) => {
     const initialWorkOrder = useMemo(() => ({
         planId: "",
         userId: "",
@@ -69,6 +69,7 @@ export const AssignWork = ({ workOrders, technicians, onAssignmentComplete, hand
             
             onAssignmentComplete?.();
             onDataChange?.();
+            setApiCallMade?.(prev => !prev);
         } catch (error) {
             console.error("Error updating work order:", error);
         } finally {

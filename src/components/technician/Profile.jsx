@@ -49,7 +49,7 @@ const ProfileSelect = ({ label, name, value, onChange, disabled, options }) => {
   );
 };
 
-const TechnicianProfile = () => {
+const TechnicianProfile = ({ setApiCallMade }) => {
   const { user: technician } = useAuth();
   const initialFormState = useMemo(() => ({
     id: technician?.id || '',
@@ -84,6 +84,7 @@ const TechnicianProfile = () => {
     }
     console.log(form);
     try {
+      setApiCallMade(true);
       const token = localStorage.getItem('authToken');
       if (!token) {
         alert('Authentication token not found. Please log in again.');

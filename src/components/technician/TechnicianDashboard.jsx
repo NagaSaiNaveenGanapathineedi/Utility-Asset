@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
 import TechnicianHeader from './TechnicianHeader';
 import { ClipboardList, FileText, BarChart3, User } from 'lucide-react';
 import WorkOrders from './WorkOrder';
@@ -8,76 +7,98 @@ import WorkHistory from './WorkHistory';
 import ReportsOverview from './Reports';
 import TechnicianProfile from './Profile';
 import { useAuth } from '../../App';
+import '../styles/components.css';
+
+const MENU_ITEMS = [
+  { id: 'workOrders', label: 'Work Orders', icon: ClipboardList },
+  { id: 'history', label: 'Work History', icon: FileText },
+  { id: 'reports', label: 'Reports', icon: BarChart3 },
+  { id: 'profile', label: 'Profile', icon: User }
+];
+
+const API_ENDPOINTS = {
+  WORKORDER_TECHNICIAN: (id) => `http://localhost:9092/workorder/technician/${id}`,
+  TASKS_ALL: 'http://localhost:9092/task/all'
+};
+
+const SidebarNavItem = ({ item, isActive, onClick }) => (
+  <li>
+    <button
+      onClick={() => onClick(item.id)}
+      className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
+    >
+      {isActive && <div className="active-indicator" />}
+      <item.icon size={18} />
+      {item.label}
+    </button>
+  </li>
+);
+
+const LoadingSpinner = () => <div className="loading-spinner">Loading...</div>;
 
 const TechnicianDashboard = () => {
   const [activeTab, setActiveTab] = useState('workOrders');
   const { user: technician } = useAuth();
   const [workOrders, setWorkOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [tasks, setTasks] = useState([]);
+  const [apiCallMade, setApiCallMade] = useState(false);
 
-  const fetchWorkOrders = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     if (!technician?.id) return;
+    
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:9092/workorder/technician/${technician.id}`);
-      setWorkOrders(response.data);
+      const [workOrdersRes, tasksRes] = await Promise.all([
+        axios.get(API_ENDPOINTS.WORKORDER_TECHNICIAN(technician.id)),
+        axios.get(API_ENDPOINTS.TASKS_ALL)
+      ]);
+      
+      setWorkOrders(workOrdersRes.data || []);
+      setTasks(tasksRes.data || []);
     } catch (error) {
-      console.error("Error fetching technician work records:", error);
+      console.error("Error fetching data:", error);
+      setWorkOrders([]);
+      setTasks([]);
     } finally {
       setLoading(false);
     }
   }, [technician?.id]);
 
   useEffect(() => {
-    fetchWorkOrders();
-  }, [fetchWorkOrders]);
+    fetchData();
+  }, [fetchData, apiCallMade]);
 
   const handleTabChange = useCallback((tabId) => setActiveTab(tabId), []);
 
   const renderActiveTab = useMemo(() => {
-    if (loading) return <div>Loading...</div>;
+    if (loading) return <LoadingSpinner />;
     
     const tabComponents = {
-      'workOrders': () => <WorkOrders workorders={workOrders} />,
-      'reports': () => <ReportsOverview workorders={workOrders} />,
-      'history': () => <WorkHistory workorders={workOrders} />,
-      'profile': () => <TechnicianProfile technician={technician} />
+      workOrders: <WorkOrders workorders={workOrders} setApiCallMade={setApiCallMade} />,
+      reports: <ReportsOverview workorders={workOrders} />,
+      history: <WorkHistory workorders={workOrders} tasks={tasks} />,
+      profile: <TechnicianProfile technician={technician} setApiCallMade={setApiCallMade} />
     };
     
-    return (tabComponents[activeTab] || tabComponents['workOrders'])();
-  }, [activeTab, workOrders, technician, loading]);
-
-  const menuItems = useMemo(() => [
-    { id: 'workOrders', label: 'Work Orders', icon: ClipboardList },
-    { id: 'history', label: 'Work History', icon: FileText },
-    { id: 'reports', label: 'Reports', icon: BarChart3 },
-    { id: 'profile', label: 'Profile', icon: User }
-  ], []);
+    return tabComponents[activeTab] || tabComponents.workOrders;
+  }, [activeTab, workOrders, tasks, technician, loading]);
 
   return (
     <div className="app-container">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <h1 style={{ color: 'var(--status-completed-text)', fontSize: '1.5rem', fontWeight: '700', margin: 0 }}>Technician Panel</h1>
+          <h1 className="sidebar-title">Technician Panel</h1>
         </div>
         <nav className="sidebar-nav">
           <ul>
-            {menuItems.map(({ id, label, icon: Icon }) => (
-              <li key={id}>
-                <button
-                  onClick={() => handleTabChange(id)}
-                  className={activeTab === id ? 'active' : ''}
-                  style={{ width: '100%', textAlign: 'left', backgroundColor: activeTab === id ? 'var(--color-active-dark-bg)' : 'transparent', color: 'var(--color-text-on-dark)', border: 'none', padding: '16px 25px', cursor: 'pointer', fontSize: '1em', fontWeight: activeTab === id ? '600' : '500', transition: 'background-color 0.3s ease, color 0.3s ease', display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}
-                  onMouseEnter={(e) => { if (activeTab !== id) e.target.style.backgroundColor = 'var(--color-hover-dark-bg)'; }}
-                  onMouseLeave={(e) => { if (activeTab !== id) e.target.style.backgroundColor = 'transparent'; }}
-                >
-                  {activeTab === id && (
-                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', backgroundColor: 'var(--color-light-primary)' }} />
-                  )}
-                  <Icon size={18} />
-                  {label}
-                </button>
-              </li>
+            {MENU_ITEMS.map((item) => (
+              <SidebarNavItem
+                key={item.id}
+                item={item}
+                isActive={activeTab === item.id}
+                onClick={handleTabChange}
+              />
             ))}
           </ul>
         </nav>
@@ -85,7 +106,9 @@ const TechnicianDashboard = () => {
 
       <div className="main-content-wrapper">
         <TechnicianHeader />
-        <main className="main-content-area" id="technician-dashboard-content">{renderActiveTab}</main>
+        <main className="main-content-area" id="technician-dashboard-content">
+          {renderActiveTab}
+        </main>
       </div>
     </div>
   );

@@ -1,56 +1,64 @@
-import { 
-  Info,
-  Plus,
-  Activity
-} from 'lucide-react';
+import { Info, Plus, Activity } from 'lucide-react';
 import { useAuth } from '../App';
+import { useMemo, useCallback } from 'react';
+import './styles/components.css';
+
+const ROLE_TITLES = {
+  user: 'User Panel',
+  technician: 'Technician Panel',
+  supervisor: 'Supervisor Panel',
+  admin: 'Admin Panel'
+};
+
+const MENU_ITEMS = [
+  { id: 'assetInfo', label: 'Asset Information', icon: Info },
+  { id: 'assetRequest', label: 'Asset Request', icon: Plus },
+  { id: 'assetHistory', label: 'Asset History', icon: Activity }
+];
+
+const NavItem = ({ item, isActive, onClick }) => {
+  const { id, label, icon: Icon } = item;
+  
+  return (
+    <li>
+      <button
+        onClick={() => onClick(id)}
+        className={`nav-item ${isActive ? 'active' : ''}`}
+      >
+        <Icon size={18} />
+        {label}
+      </button>
+    </li>
+  );
+};
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
   const { user } = useAuth();
   
-  const getSidebarTitle = (role) => {
-    const titles = {
-      user: 'User Panel',
-      technician: 'Technician Panel',
-      supervisor: 'Supervisor Panel',
-      admin: 'Admin Panel'
-    };
-    return titles[role] || titles.user;
-  };
+  const sidebarTitle = useMemo(() => 
+    ROLE_TITLES[user?.role] || ROLE_TITLES.user, 
+    [user?.role]
+  );
+
+  const handleTabChange = useCallback((tabId) => {
+    setActiveTab(tabId);
+  }, [setActiveTab]);
 
   return (
     <aside className="sidebar">
-      {/* Sidebar Header */}
       <div className="sidebar-header">
-        <h1 style={{ 
-          color: 'var(--status-completed-text)', 
-          fontSize: '1.5rem',
-          fontWeight: '700',
-          margin: 0
-        }}>
-        {getSidebarTitle(user?.role)}
-        </h1>
+        <h1 className="sidebar-title">{sidebarTitle}</h1>
       </div>
       
-      {/* Sidebar Navigation */}
       <nav className="sidebar-nav">
         <ul>
-          {[
-            { id: 'assetInfo', label: 'Asset Information', icon: Info },
-            { id: 'assetRequest', label: 'Asset Request', icon: Plus },
-            { id: 'assetHistory', label: 'Asset History', icon: Activity }
-          ].map(({ id, label, icon: Icon }) => (
-            <li key={id}>
-              <button
-                onClick={() => setActiveTab(id)}
-                className={activeTab === id ? 'active' : ''}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Icon size={18} />
-                  {label}
-                </div>
-              </button>
-            </li>
+          {MENU_ITEMS.map((item) => (
+            <NavItem
+              key={item.id}
+              item={item}
+              isActive={activeTab === item.id}
+              onClick={handleTabChange}
+            />
           ))}
         </ul>
       </nav>

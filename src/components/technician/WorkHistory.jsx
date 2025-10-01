@@ -1,11 +1,36 @@
 import { motion } from 'framer-motion';
 import { BarChart3 } from 'lucide-react';
 import { useMemo } from 'react';
+import '../styles/components.css';
 
-const WorkHistory = ({ workorders }) => {
-  const completed = useMemo(() => 
-    workorders.filter(order => order.status === "Completed"), [workorders]
+const EmptyState = () => (
+  <div className="empty-state">
+    <BarChart3 size={48} className="empty-icon" />
+    <h3 className="empty-title">No completed work orders</h3>
+    <p className="empty-message">Completed items will appear here after you mark them as Done.</p>
+  </div>
+);
+
+const WorkOrderCard = ({ order }) => (
+  <div className="work-order-card">
+    <div className="card-header">
+      <h3 className="card-title">{order.assetId.name} Request</h3>
+    </div>
+    <div className="card-details">
+      <p><strong>Requested By:</strong> {order.userId.name}</p>
+      <p><strong>Due On:</strong> {order.planId.nextMaintenanceDate}</p>
+      <p><strong>Maintenance for:</strong> {order.frequency} days</p>
+      <p><strong>Issue:</strong> {order.desc}</p>
+    </div>
+  </div>
+);
+
+const WorkHistory = ({ workorders = [], plans = [] }) => {
+  const completedOrders = useMemo(() => 
+    workorders.filter(order => order.status === "Completed"), 
+    [workorders]
   );
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -13,40 +38,17 @@ const WorkHistory = ({ workorders }) => {
       transition={{ duration: 0.4 }}
       className="card"
     >
-      <h2 style={{ color: 'var(--color-text-dark)' }}>Work History</h2>
-      <p style={{
-        color: 'var(--color-text-medium)',
-        fontSize: '1rem',
-        marginBottom: '30px'
-      }}>
-        Completed work orders
+      <h2 className="section-title">Work History</h2>
+      <p className="section-subtitle">
+        <span className="status-badge completed">Completed</span> work orders
       </p>
 
-      {completed.length === 0 ? (
-        <div style={{
-          textAlign: 'center',
-          padding: '40px',
-          color: 'var(--color-text-medium)',
-          backgroundColor: 'var(--color-body-bg)',
-          borderRadius: '8px'
-        }}>
-          <BarChart3 size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
-          <h3 style={{ color: 'var(--color-text-dark)', marginBottom: '8px' }}>No completed work orders</h3>
-          <p>Completed items will appear here after you mark them as Done.</p>
-        </div>
+      {completedOrders.length === 0 ? (
+        <EmptyState />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-          {completed.map(order => (
-            <div key={order.workId} style={{ background: 'var(--color-white)', border: '1px solid var(--color-border-light)', borderRadius: '8px', padding: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                <h3 style={{ color: 'var(--color-text-dark)', margin: 0, fontSize: '1rem' }}>{order.desc}</h3>
-                <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '500', background: 'var(--status-completed-bg)', color: 'var(--status-completed-text)' }}>Done</span>
-              </div>
-              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Asset:</strong> {order.assetId.name}</p>
-              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Requested By:</strong> {order.userId.name}</p>
-              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Due On:</strong> {order.planId.nextMaintenanceDate}</p>
-              <p style={{ color: 'var(--color-text-medium)', margin: '4px 0', fontSize: '0.9rem' }}><strong>Maintenance for:</strong> {order.frequency} days</p>
-            </div>
+        <div className="work-orders-grid">
+          {completedOrders.map(order => (
+            <WorkOrderCard key={order.workId} order={order} />
           ))}
         </div>
       )}

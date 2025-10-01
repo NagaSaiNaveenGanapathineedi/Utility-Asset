@@ -8,7 +8,7 @@ import { API_ENDPOINTS } from '../../config/api';
 import { SKILLS, REGIONS, LOCATIONS, DEFAULT_PASSWORD } from '../../config/constants';
 import LoadingSpinner from './LoadingSpinner';
 
-export const ViewAssignments = ({ workOrders = [], loading = false }) => {
+export const ViewAssignments = ({ workOrders = [], loading = false, setApiCallMade }) => {
 	const assigned = useMemo(() => workOrders.filter(w => w.techId != null), [workOrders]);
 	
 	if (loading) {
@@ -54,7 +54,7 @@ export const ViewAssignments = ({ workOrders = [], loading = false }) => {
 	);
 };
 
-export const RegisterTechnician = ({ handleTabChange, onDataChange }) => {
+export const RegisterTechnician = ({ handleTabChange, onDataChange, setApiCallMade }) => {
 	const initialForm = useMemo(() => ({
 		name: '',
 		email: '',
@@ -95,6 +95,7 @@ export const RegisterTechnician = ({ handleTabChange, onDataChange }) => {
 			
 			setForm(initialForm);
 			onDataChange?.();
+			setApiCallMade?.(prev => !prev);
 			handleTabChange('search-technician');
 		} catch (error) {
 			console.error('Error registering technician:', error);
@@ -173,7 +174,7 @@ export const RegisterTechnician = ({ handleTabChange, onDataChange }) => {
 	);
 };
 
-export const SearchTechnicians = ({ technicians = [], handleTabChange, loading = false }) => {
+export const SearchTechnicians = ({ technicians = [], handleTabChange, loading = false, setApiCallMade }) => {
 	const [searchTerm, setSearchTerm] = useState('');
 	
 	if (loading) {
