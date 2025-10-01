@@ -15,7 +15,7 @@ const getFrequencyString = (days) => {
   }
 };
 
-const AssetHistory = ({ userHistory }) => {
+const AssetHistory = ({ userHistory, setApiCallMade }) => {
   const records = useMemo(() => userHistory || [], [userHistory]);
   // console.log(userHistory);
   const pendingRequests = useMemo(() => 

@@ -70,7 +70,7 @@ const AssetCard = ({ asset, compact = false, onEdit, onDelete }) => {
     );
 };
 
-export const AssetRegistration = ({ handleTabChange, onDataChange }) => {
+export const AssetRegistration = ({ handleTabChange, onDataChange, setApiCallMade }) => {
     const initialFormData = useMemo(() => ({
         id: 0,
         name: "",
@@ -120,6 +120,7 @@ export const AssetRegistration = ({ handleTabChange, onDataChange }) => {
             
             setFormData(initialFormData);
             onDataChange?.();
+            setApiCallMade?.(prev => !prev);
             handleTabChange("search-assets");
         } catch (error) {
             console.error('Error registering asset:', error);
@@ -178,7 +179,7 @@ export const AssetRegistration = ({ handleTabChange, onDataChange }) => {
     );
 };
 
-export const SearchAssets = ({ assets = [], onDataChange }) => {
+export const SearchAssets = ({ assets = [], onDataChange, setApiCallMade }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedType, setSelectedType] = useState('');
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -245,6 +246,7 @@ export const SearchAssets = ({ assets = [], onDataChange }) => {
             await axios.put(API_ENDPOINTS.ASSET_UPDATE(editForm.id), editForm);
             setIsEditOpen(false);
             onDataChange?.();
+            setApiCallMade?.(prev => !prev);
         } catch (error) {
             console.error('Error updating asset:', error);
         } finally {
@@ -258,6 +260,7 @@ export const SearchAssets = ({ assets = [], onDataChange }) => {
         try {
             await axios.delete(API_ENDPOINTS.ASSET_DELETE(id));
             if (onDataChange) onDataChange();
+            setApiCallMade?.(prev => !prev);
         } catch (error) {
             console.error('Error deleting asset:', error);
         }

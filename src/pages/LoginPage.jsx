@@ -280,13 +280,8 @@ const LoginPage = () => {
         >
           <Shield size={20} />
           <div>
-            <p className="font-semibold mb-2">Demo Credentials (Role-Based Access)</p>
-            <div className="space-y-1 text-sm">
-              <p><strong>User:</strong> user@gmail.com / user123</p>
-              <p><strong>Admin:</strong> admin@gmail.com / admin123</p>
-              <p><strong>Supervisor:</strong> supervisor@gmail.com / supervisor123</p>
-              <p><strong>Technician:</strong> technician@gmail.com / tech123</p>
-            </div>
+            <p className="font-semibold mb-2">For technician initial password is <strong>Demo@uamt123</strong></p>
+
           </div>
         </motion.div>
  

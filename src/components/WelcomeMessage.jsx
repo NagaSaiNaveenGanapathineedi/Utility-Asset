@@ -1,30 +1,60 @@
 import { motion } from 'framer-motion';
 import { useAuth } from '../App';
 import { User } from 'lucide-react';
+import { useMemo } from 'react';
+import './styles/components.css';
+
+const ROLE_MESSAGES = {
+  user: 'Monitor assets, submit requests, and track maintenance history',
+  technician: 'Manage work orders, update maintenance status, and view assigned tasks',
+  supervisor: 'Oversee maintenance operations, approve requests, and review team performance',
+  admin: 'Full system access - manage users, assets, and system configuration'
+};
+
+const ROLE_EMOJIS = {
+  user: '👋',
+  technician: '🔧',
+  supervisor: '👨💼',
+  admin: '⚡'
+};
+
+const ROLE_STYLES = {
+  admin: { bg: 'var(--status-open-bg)', color: 'var(--status-open-text)' },
+  supervisor: { bg: 'var(--status-in-progress-bg)', color: 'var(--status-in-progress-text)' },
+  technician: { bg: 'var(--status-completed-bg)', color: 'var(--status-completed-text)' },
+  default: { bg: 'var(--color-border-light)', color: 'var(--color-text-medium)' }
+};
+
+const RoleBadge = ({ role }) => {
+  const style = ROLE_STYLES[role] || ROLE_STYLES.default;
+  
+  return (
+    <span 
+      className="role-badge"
+      style={{
+        display: 'inline-block',
+        padding: '4px 8px',
+        backgroundColor: style.bg,
+        color: style.color,
+        borderRadius: '4px',
+        fontSize: '11px',
+        fontWeight: '500',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px'
+      }}
+    >
+      {role}
+    </span>
+  );
+};
 
 const WelcomeMessage = () => {
   const { user } = useAuth();
 
-  // Role-specific messages
-  const getRoleMessage = (role) => {
-    const messages = {
-      user: 'Monitor assets, submit requests, and track maintenance history',
-      technician: 'Manage work orders, update maintenance status, and view assigned tasks',
-      supervisor: 'Oversee maintenance operations, approve requests, and review team performance',
-      admin: 'Full system access - manage users, assets, and system configuration'
-    };
-    return messages[role] || messages.user;
-  };
-
-  const getRoleEmoji = (role) => {
-    const emojis = {
-      user: '👋',
-      technician: '🔧', 
-      supervisor: '👨‍💼',
-      admin: '⚡'
-    };
-    return emojis[role] || emojis.user;
-  };
+  const { message, emoji } = useMemo(() => ({
+    message: ROLE_MESSAGES[user?.role] || ROLE_MESSAGES.user,
+    emoji: ROLE_EMOJIS[user?.role] || ROLE_EMOJIS.user
+  }), [user?.role]);
 
   return (
     <motion.div
@@ -47,38 +77,20 @@ const WelcomeMessage = () => {
             border: 'none',
             padding: 0
           }}>
-            Welcome back, {user?.name || 'Demo User'}! {getRoleEmoji(user?.role)}
+            Welcome back, {user?.name || 'Demo User'}! {emoji}
           </h2>
           <p style={{ 
             margin: '0 0 4px 0', 
             color: 'var(--color-text-medium)', 
             fontSize: '1rem'
           }}>
-            {getRoleMessage(user?.role)}
+            {message}
           </p>
-          {user?.role && (
-            <span style={{
-              display: 'inline-block',
-              padding: '4px 8px',
-              background: user?.role === 'admin' ? 'var(--status-open-bg)' : 
-                         user?.role === 'supervisor' ? 'var(--status-in-progress-bg)' :
-                         user?.role === 'technician' ? 'var(--status-completed-bg)' : 'var(--color-border-light)',
-              color: user?.role === 'admin' ? 'var(--status-open-text)' : 
-                     user?.role === 'supervisor' ? 'var(--status-in-progress-text)' :
-                     user?.role === 'technician' ? 'var(--status-completed-text)' : 'var(--color-text-medium)',
-              borderRadius: '4px',
-              fontSize: '11px',
-              fontWeight: '500',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}>
-              {user.role}
-            </span>
-          )}
+          {user?.role && <RoleBadge role={user.role} />}
         </div>
       </div>
     </motion.div>
   );
 };
 
-export default WelcomeMessage; 
+export default WelcomeMessage;

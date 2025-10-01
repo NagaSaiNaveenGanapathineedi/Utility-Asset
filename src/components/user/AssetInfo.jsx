@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { ASSET_FIELDS, cardStyle } from './styles';
 
-const AssetInfo = ({ assets = [] }) => {
+const AssetInfo = ({ assets = [], setApiCallMade }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

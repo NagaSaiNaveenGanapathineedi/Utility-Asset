@@ -10,7 +10,6 @@ import AdminDashboard from './components/admin/AdminDashboard';
 import SupervisorDashboard from './components/supervisor/SupervisorDashboard';
 import TechnicianDashboard from './components/technician/TechnicianDashboard';
 import ScrollToTop from './components/ScrollToTop';
-import { AppDataProvider } from './context/AppDataContext.jsx';
  
 // Authentication Context
 const AuthContext = createContext();
@@ -138,11 +137,9 @@ export default function RootLayout() {
   return (
     <>
       <ScrollToTop />
-      <AppDataProvider>
         <AuthProvider>
           <Outlet />
         </AuthProvider>
-      </AppDataProvider>
     </>
   );
 }
