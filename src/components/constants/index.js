@@ -49,7 +49,7 @@ export const ANIMATION_VARIANTS = {
 // Status configurations
 export const STATUS_TYPES = {
   COMPLETED: 'Completed',
-  IN_PROGRESS: 'In Progress',
+  ASSIGNED: 'Assigned',
   PENDING: 'Pending',
   NOT_ASSIGNED: 'Not Assigned'
 };

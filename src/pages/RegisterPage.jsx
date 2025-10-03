@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -113,17 +114,19 @@ const RegisterPage = () => {
         },
         body: JSON.stringify(payload)
       });
-     
-      const data = await response.json();
  
       if (response.ok) {
         navigate('/login', { state: { registeredSuccess: true, registeredEmail: formData.email } });
       } else {
-        const errorMessage = data.message || 'Registration failed. Please try again.';
-        setAuthError(errorMessage);
+        const errorData = await response.text();
+        if (response.status === 409) {
+          setAuthError("User already exists with the provided email.");
+        } else {
+          setAuthError(errorData || 'Registration failed. Please try again.');
+        }
       }
     } catch (error) {
-      console.error('Network error:', error);
+      // console.error('Network error:', error);
       setAuthError('Could not connect to the server. Please check your network or try again later.');
     } finally {
       setLoading(false);
