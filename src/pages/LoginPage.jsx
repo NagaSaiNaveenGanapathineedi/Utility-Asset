@@ -113,8 +113,10 @@ const LoginPage = () => {
           navigate('/supervisor-dashboard');
         } else if (role === 'technician') {
           navigate('/technician-dashboard');
-        } else {
+        } else if( role === 'user' ){
           navigate('/dashboard');
+        }else {
+          navigate('/register');
         }
       } else {
         setErrors({ email: 'Invalid email or password. Please try again.' });
