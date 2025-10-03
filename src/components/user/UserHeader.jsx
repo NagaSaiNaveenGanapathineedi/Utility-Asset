@@ -6,6 +6,7 @@ import './UserHeader.css';
 
 const UserHeader = () => {
   const { user, logout } = useAuth();
+  //console.log(user)
   const [showDropdown, setShowDropdown] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
 
@@ -85,7 +86,7 @@ const UserHeader = () => {
             <div className="profile-section">
               <h4 className="profile-section-title">Contact Information</h4>
               <div className="profile-items">
-                {[{icon: Mail, label: 'Email', value: user?.email || 'user@company.com'}, {icon: Phone, label: 'Phone', value: "+91-"+user?.phno || '+1 (555) 123-4567'}, {icon: MapPin, label: 'Location', value: user?.location || 'New York, NY'}].map(({icon: Icon, label, value}) => (
+                {[{icon: Mail, label: 'Email', value: user?.email || 'user@company.com'}, {icon: Phone, label: 'Phone', value: "+91-"+user?.phno || '+1 (555) 123-4567'}, {icon: MapPin, label: 'Location', value: user?.location || 'N/A'}].map(({icon: Icon, label, value}) => (
                   <div key={label} className="profile-item">
                     <Icon size={16} className="profile-item-icon" />
                     <div><p className="profile-item-label">{label}</p><p className="profile-item-value">{value}</p></div>

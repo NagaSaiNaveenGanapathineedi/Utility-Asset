@@ -39,7 +39,7 @@ const LandingPage = () => {
     }
  
     if (code && state === 'oauth' && !oauthProcessed) {
-      console.log('Processing OAuth callback...');
+      //console.log('Processing OAuth callback...');
       // setOauthProcessed(true);
       handleOAuthCallback(code);
     }
@@ -48,7 +48,7 @@ const LandingPage = () => {
   const handleOAuthCallback = async (code) => {
     setOauthLoading(true);
     try {
-      console.log('Sending OAuth request with code:', code);
+      //console.log('Sending OAuth request with code:', code);
      
       const response = await fetch(`${API_BASE_URL}/auth/oauth/google`, {
         method: 'POST',
@@ -60,11 +60,11 @@ const LandingPage = () => {
         })
       });
  
-      console.log('Response status:', response.status);
+      //console.log('Response status:', response.status);
       //alert("Failed to authenticate");
       if (response.ok) {
         const responseText = await response.text();
-        console.log('Response text:', responseText);
+        //console.log('Response text:', responseText);
        
         if (!responseText || responseText.trim() === '') {
           console.error('Empty response from server');
@@ -82,8 +82,8 @@ const LandingPage = () => {
           return;
         }
        
-        console.log('Parsed response data:', data);
-        const { token, email, role, id } = data;
+        //console.log('Parsed response data:', data);
+        const { token, email, role, id, name, phno, location, region, skill, pincode } = data;
        
         if (!token || !role) {
           console.error('Invalid response data:', data);
@@ -94,14 +94,14 @@ const LandingPage = () => {
         localStorage.setItem('authToken', token);
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
        
-        const user = { id, email, role, token };
+        const user = { id, email, role, token, name, phno, location, region, skill, pincode };
         login(user);
        
         // Clear URL parameters
         window.history.replaceState({}, document.title, '/');
        
         // Navigate based on role
-        console.log('Navigating user with role:', role);
+        //console.log('Navigating user with role:', role);
         if (role.toLowerCase() === 'user') {
           navigate('/user-dashboard');
         } else if (role.toUpperCase() === 'SUPERVISOR') {
