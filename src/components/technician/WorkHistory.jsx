@@ -11,21 +11,25 @@ const EmptyState = () => (
   </div>
 );
 
-const WorkOrderCard = ({ order }) => (
+const WorkOrderCard = ({ order, task }) => (
   <div className="work-order-card">
     <div className="card-header">
       <h3 className="card-title">{order.assetId.name} Request</h3>
+      <p>✅ {task.completedDate}</p>
     </div>
     <div className="card-details">
       <p><strong>Requested By:</strong> {order.userId.name}</p>
       <p><strong>Due On:</strong> {order.planId.nextMaintenanceDate}</p>
       <p><strong>Maintenance for:</strong> {order.frequency} days</p>
       <p><strong>Issue:</strong> {order.desc}</p>
+      <p><strong>Time taken: </strong> {task.estHours} hrs</p>
+      <p><strong>Fixed issue:</strong> {task.descrip}</p>
+
     </div>
   </div>
 );
 
-const WorkHistory = ({ workorders = [], plans = [] }) => {
+const WorkHistory = ({ workorders = [], tasks = [] }) => {
   const completedOrders = useMemo(() => 
     workorders.filter(order => order.status === "Completed"), 
     [workorders]
@@ -40,7 +44,7 @@ const WorkHistory = ({ workorders = [], plans = [] }) => {
     >
       <h2 className="section-title">Work History</h2>
       <p className="section-subtitle">
-        <span className="status-badge completed">Completed</span> work orders
+        <span className="completed"><strong>Completed</strong></span> work orders
       </p>
 
       {completedOrders.length === 0 ? (
@@ -48,7 +52,7 @@ const WorkHistory = ({ workorders = [], plans = [] }) => {
       ) : (
         <div className="work-orders-grid">
           {completedOrders.map(order => (
-            <WorkOrderCard key={order.workId} order={order} />
+            <WorkOrderCard key={order.workId} order={order} task={tasks.find(task => task.workId === order.workId)} />
           ))}
         </div>
       )}

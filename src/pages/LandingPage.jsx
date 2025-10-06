@@ -108,8 +108,6 @@ const LandingPage = () => {
           navigate('/supervisor-dashboard');
         } else if (role.toUpperCase() === 'TECHNICIAN') {
           navigate('/technician-dashboard');
-        } else if (role.toLowerCase() === 'admin') {
-          navigate('/admin-dashboard');
         }
       } else {
         // console.error('OAuth response not ok:', response.status, response.statusText);

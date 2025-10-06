@@ -48,7 +48,7 @@ export const MaintenancePlan = ({ plans = [], loading = false, setApiCallMade })
 										<div key={label}><strong>{label}:</strong> {value}</div>
 									))}
 									<div style={{ marginTop: '8px', padding: '10px 12px', border: '1px solid var(--color-border-light)', borderRadius: '8px', background: 'var(--color-body-bg)', color: 'var(--color-text-dark)', fontWeight: 700 }}>
-										{p.technician?.skill || 'General'} purpose
+										{p.technician?.skill || 'General'} Type
 									</div>
 								</div>
 							</motion.div>

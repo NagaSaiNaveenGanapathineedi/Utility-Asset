@@ -120,8 +120,11 @@ const WorkOrders = ({ workorders, setApiCallMade }) => {
           const taskData = {
             descrip: completionData[order.workId]?.description || '',
             estHours: completionData[order.workId]?.hours || '',
-            technicianId: order.techId.id
+            technicianId: order.techId.id,
+            workId: order.workId,
+            completedDate: new Date().toLocaleDateString('en-CA')
           };
+          console.log(taskData);
           await axios.post('http://localhost:9092/task/save', taskData);
           setOrders(prev => prev.filter(o => o.workId !== order.workId));
         }

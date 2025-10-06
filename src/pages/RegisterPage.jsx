@@ -32,7 +32,7 @@ const RegisterPage = () => {
     region: '',
     pincode: '',
     location: '',
-    skill: '',
+    skill: 'N/A',
     terms: false
   });
  
@@ -102,7 +102,6 @@ const RegisterPage = () => {
         region: formData.region.trim() || null,
         pincode: formData.pincode.trim() || null,
         location: formData.location.trim() || null,
-        skill: formData.skill.trim() || null,
         role: 'user'
     };
  
@@ -512,7 +511,7 @@ const RegisterPage = () => {
               </div>
             </motion.div>
  
-            {/* Skill Field */}
+            {/* Skill Field
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -534,7 +533,7 @@ const RegisterPage = () => {
                   placeholder="e.g., Java Developer"
                 />
               </div>
-            </motion.div>
+            </motion.div> */}
            
             <motion.div
               initial={{ opacity: 0 }}

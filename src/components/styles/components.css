@@ -464,9 +464,9 @@
   gap: 8px;
 }
 
-.form-label {
+div.form-field >.form-label {
   font-weight: 500;
-  color: var(--color-text-dark);
+  color: black;
   font-size: 0.9rem;
 }
 

@@ -107,9 +107,7 @@ const LoginPage = () => {
         // console.log('User object:', user);
         login(user);
        
-        if (role === 'admin') {
-          navigate('/admin-dashboard');
-        } else if (role === "supervisor") {
+        if (role === "supervisor") {
           navigate('/supervisor-dashboard');
         } else if (role === 'technician') {
           navigate('/technician-dashboard');
