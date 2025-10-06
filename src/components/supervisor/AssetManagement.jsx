@@ -6,7 +6,6 @@ import { styles } from './supervisorStyles';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../../config/api';
 import { ASSET_TYPES } from '../../config/constants';
-import LoadingSpinner from './LoadingSpinner';
 
 const AssetCard = ({ asset, compact = false, onEdit, onDelete }) => {
     const cardStyle = useMemo(() => ({

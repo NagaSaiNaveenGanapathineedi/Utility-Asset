@@ -97,8 +97,8 @@ const AssetHistory = ({ userHistory, setApiCallMade }) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{
                         padding: '4px 8px',
-                        background: 'var(--status-in-progress-bg)',
-                        color: 'var(--status-in-progress-text)',
+                        background:  '#c3c5c6ff',
+                        color: '#444444ff',
                         borderRadius: '4px',
                         fontSize: '11px',
                         fontWeight: '500',
@@ -228,8 +228,8 @@ const AssetHistory = ({ userHistory, setApiCallMade }) => {
                   </h4>
                   <span style={{
                     padding: '4px 8px',
-                    background: asset.status === 'Done' ? 'var(--status-completed-bg)' : 'var(--color-border-light)',
-                    color: asset.status === 'Done' ? 'var(--status-completed-text)' : 'var(--color-text-medium)',
+                    background: asset.status === 'Assigned' ? '#e3f2fd' : asset.status === 'Pending' ? '#fff3e0' : '#e8f5e8',
+                    color: asset.status === 'Assigned' ? '#1976d2' : asset.status === 'Pending' ? '#f57c00' : '#388e3c',
                     borderRadius: '4px',
                     fontSize: '11px',
                     fontWeight: '500',

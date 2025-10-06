@@ -25,13 +25,13 @@ export const ViewAssignments = ({ workOrders = [], loading = false, setApiCallMa
 			) : (
 				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
 					{assigned.map((w) => {
-						const assignmentDetails = useMemo(() => [
+						const assignmentDetails = [
 							{ label: 'Asset', value: w.assetId?.name || 'N/A' },
 							{ label: 'Technician', value: w.techId?.name || 'N/A' },
 							{ label: 'Requested By', value: w.userId?.name || 'N/A' },
 							{ label: 'Plan', value: `PLN-${w.planId.planId}` },
 							{ label: 'Maintenance (days)', value: w.frequency }
-						], [w.assetId?.name, w.techId?.name, w.userId?.name, w.planId.planId, w.frequency]);
+						];
 
 						return (
 							<div key={w.workId} style={{ background: 'var(--color-white)', border: '1px solid var(--color-border-light)', borderRadius: '8px', padding: '16px' }}>
@@ -177,10 +177,6 @@ export const RegisterTechnician = ({ handleTabChange, onDataChange, setApiCallMa
 export const SearchTechnicians = ({ technicians = [], handleTabChange, loading = false, setApiCallMade }) => {
 	const [searchTerm, setSearchTerm] = useState('');
 	
-	if (loading) {
-		return <LoadingSpinner />;
-	}
-	
 	const filtered = useMemo(() => {
 		let list = [...technicians];
 		if (searchTerm) {
@@ -192,6 +188,11 @@ export const SearchTechnicians = ({ technicians = [], handleTabChange, loading =
 		}
 		return list;
 	}, [searchTerm, technicians]);
+	
+	if (loading) {
+		return <LoadingSpinner />;
+	}
+	
 	return (
 		<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card">
 			<h2 style={{ color: 'var(--color-text-dark)' }}>Search Technicians</h2>
@@ -221,11 +222,11 @@ export const SearchTechnicians = ({ technicians = [], handleTabChange, loading =
 			) : (
 				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px' }}>
 					{filtered.map(t => {
-						const technicianDetails = useMemo(() => [
+						const technicianDetails = [
 							{ label: 'Technician ID', value: `TEC-${t.id}` },
 							{ label: 'Location', value: t.location },
 							{ label: 'Region', value: t.region }
-						], [t.id, t.location, t.region]);
+						];
 
 						return (
 							<motion.div

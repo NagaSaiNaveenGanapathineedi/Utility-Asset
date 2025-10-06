@@ -28,8 +28,8 @@ const AssetSuggestion = ({ asset, onSelect }) => (
     onMouseDown={(e) => { e.preventDefault(); onSelect(asset); }}
     className="asset-suggestion"
   >
-    <span className="suggestion-name">{asset.name}</span>
-    <span className="suggestion-details">{asset.assetId} • {asset.location}</span>
+    <span className="suggestion-name">{asset.name} <span className="suggestion-details">({asset.type})</span></span>
+    
   </button>
 );
 
@@ -108,8 +108,8 @@ const AssetRequestForm = ({ assets = [], user, setApiCallMade }) => {
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
 
-    if (!workorder.assetId || !workorder.frequency) {
-      console.error('Validation failed: Missing asset or frequency');
+    if (!workorder.assetId || !workorder.frequency || !workorder.description) {
+      //console.error('Validation failed: Missing asset or frequency');
       return;
     }
 
@@ -118,7 +118,8 @@ const AssetRequestForm = ({ assets = [], user, setApiCallMade }) => {
       resetForm();
       setApiCallMade?.(prev => !prev);
     } catch (error) {
-      console.error("Error submitting asset request:", error);
+      //console.error("Error submitting asset request:", error);
+      alert("Error submitting asset request. Please try again later.");
     }
   }, [workorder, post, resetForm, setApiCallMade]);
 
@@ -222,7 +223,7 @@ const AssetRequestForm = ({ assets = [], user, setApiCallMade }) => {
           </FormField>
         </div>
 
-        <FormField label="Description">
+        <FormField label="Description" required>
           <textarea
             name="description"
             value={workorder.description || ''}
@@ -230,6 +231,7 @@ const AssetRequestForm = ({ assets = [], user, setApiCallMade }) => {
             placeholder="Enter additional details or special instructions"
             style={{ ...inputStyle, minHeight: '100px', resize: 'vertical' }}
             rows="4"
+            required
           />
         </FormField>
 
