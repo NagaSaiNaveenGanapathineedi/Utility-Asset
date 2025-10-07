@@ -26,11 +26,11 @@ import { AssetHistory, TechnicianSummary } from './Reports';
 
 
 const SupervisorDashboard = () => {
-	const [activeTab, setActiveTab] = useState('search-assets');
+	const [activeTab, setActiveTab] = useState('assign-work');
 	const [assets, setAssets] = useState([]);
 	const [technicians, setTechnicians] = useState([]);
 	const [workOrders, setWorkOrders] = useState([]);
-	const [expandedMenus, setExpandedMenus] = useState({ assets: true });
+	const [expandedMenus, setExpandedMenus] = useState({ workOrder: true });
 	const [plans, setPlans] = useState([]);
 	const [dataVersion, setDataVersion] = useState(0);
 	const [loading, setLoading] = useState(false);

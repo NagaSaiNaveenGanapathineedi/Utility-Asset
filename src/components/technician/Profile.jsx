@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { color, motion } from 'framer-motion';
 import { useAuth } from '../../App';
+import './TechnicianHeader.css';
 
 const SKILLS = ['', 'HVAC', 'Electrical', 'Network', 'Mechanical', 'Generator', 'Fire Safety'];
 const REGIONS = ['', 'North Zone', 'South Zone', 'East Zone', 'West Zone', 'Central Zone'];
@@ -16,7 +17,7 @@ const ProfileInput = ({ label, name, value, onChange, disabled, type = 'text' })
   
   return (
     <div className="form-group">
-      <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: 'var(--color-text-dark)' }}>
+      <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: name==="password" ? 'red' : 'var(--color-text-dark)' }}>
         {label} *
       </label>
       <input name={name} type={type} value={value} onChange={onChange} disabled={disabled} style={inputStyle} />
@@ -55,7 +56,7 @@ const TechnicianProfile = ({ setApiCallMade }) => {
     id: technician?.id || '',
     name: technician?.name || '',
     email: technician?.email || '',
-    password: technician?.password || '',
+    password: '',
     phno: technician?.phno || '',
     region: technician?.region || '',
     pincode: technician?.pincode || '',
@@ -152,12 +153,12 @@ const TechnicianProfile = ({ setApiCallMade }) => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '16px' }}>
           <ProfileInput label="Name" name="name" value={form.name} onChange={handleChange} disabled={!isEditing} />
           <ProfileInput label="Email" name="email" value={form.email} onChange={handleChange} disabled={!isEditing} />
-          <ProfileInput label="Password" name="password" value={form.password} onChange={handleChange} disabled={!isEditing} />
           <ProfileInput label="Phone" name="phno" type="tel" value={form.phno} onChange={handleChange} disabled={!isEditing} />
           <ProfileInput label="Location" name="location" value={form.location} onChange={handleChange} disabled={!isEditing} />
           <ProfileInput label="Pincode" name="pincode" value={form.pincode} onChange={handleChange} disabled={!isEditing} />
           <ProfileSelect label="Skill" name="skill" value={form.skill} onChange={handleChange} disabled={!isEditing} options={SKILLS} />
           <ProfileSelect label="Region" name="region" value={form.region} onChange={handleChange} disabled={!isEditing} options={REGIONS} />
+          <ProfileInput label="Please Enter Password to update the profile" name="password" value={form.password} onChange={handleChange} disabled={!isEditing} />
         </div>
 
         {isEditing && (

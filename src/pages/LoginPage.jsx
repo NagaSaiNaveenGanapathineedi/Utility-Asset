@@ -25,7 +25,7 @@ const LoginPage = () => {
  
   useEffect(() => {
     if (location.state?.registeredSuccess) {
-      alert('Account created successfully. Please sign in.');
+      //alert('Account created successfully. Please sign in.');
       // replace state to clear banner on back/refresh
       navigate('/login', { replace: true, state: { registeredEmail: location.state.registeredEmail } });
     }
