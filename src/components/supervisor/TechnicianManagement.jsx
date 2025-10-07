@@ -98,7 +98,8 @@ export const RegisterTechnician = ({ handleTabChange, onDataChange, setApiCallMa
 			setApiCallMade?.(prev => !prev);
 			handleTabChange('search-technician');
 		} catch (error) {
-			console.error('Error registering technician:', error);
+			if(error.response.status === 409){alert("Technician with this email already exists!")}
+			else{console.error('Error registering technician:', error);}
 		} finally {
 			setLoading(false);
 		}

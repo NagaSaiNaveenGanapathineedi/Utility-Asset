@@ -112,7 +112,8 @@ export const AssetRegistration = ({ handleTabChange, onDataChange, setApiCallMad
                 siteCode: formData.siteCode,
                 description: formData.description,
                 count,
-                regDate: formData.regDate
+                regDate: formData.regDate,
+                active: true
             };
             
             await axios.post(API_ENDPOINTS.ASSET_SAVE, payload);
@@ -219,7 +220,8 @@ export const SearchAssets = ({ assets = [], onDataChange, setApiCallMade }) => {
             count: asset.count,
             regDate: asset.regDate,
             siteCode: asset.siteCode,
-            description: asset.description
+            description: asset.description,
+            active: true
         });
         setIsEditOpen(true);
     }, []);
