@@ -12,7 +12,6 @@ import RootLayout, {
   LoginPage,
   RegisterPage,
   UserDashboard,
-  AdminDashboard,
   SupervisorDashboard,
   TechnicianDashboard
 } from './App.jsx'
@@ -48,12 +47,6 @@ const router = createBrowserRouter([
           <RequireAuth>
             <UserDashboard />
           </RequireAuth>
-        )
-      },
-      { path: '/admin-dashboard', element: (
-          <RequireRole role="admin">
-            <AdminDashboard />
-          </RequireRole>
         )
       },
       { path: '/supervisor-dashboard', element: (

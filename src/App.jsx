@@ -6,7 +6,6 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
  
 import UserDashboard from './components/user/UserDashboard';
-import AdminDashboard from './components/admin/AdminDashboard';
 import SupervisorDashboard from './components/supervisor/SupervisorDashboard';
 import TechnicianDashboard from './components/technician/TechnicianDashboard';
 import ScrollToTop from './components/ScrollToTop';
@@ -23,7 +22,6 @@ export const useAuth = () => {
 };
  
 function roleToPath(role) {
-  if (role === 'admin') return '/admin-dashboard';
   if (role === 'supervisor') return '/supervisor-dashboard';
   if (role === 'technician') return '/technician-dashboard';
   return '/dashboard';
@@ -151,7 +149,6 @@ export {
   RegisterPage,
  
   UserDashboard,
-  AdminDashboard,
   SupervisorDashboard,
   TechnicianDashboard
 };

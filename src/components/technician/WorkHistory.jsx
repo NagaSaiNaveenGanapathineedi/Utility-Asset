@@ -15,15 +15,15 @@ const WorkOrderCard = ({ order, task }) => (
   <div className="work-order-card">
     <div className="card-header">
       <h3 className="card-title">{order.assetId.name} Request</h3>
-      <p>✅ {task.completedDate}</p>
+      <p>✅ {task?.completedDate}</p>
     </div>
     <div className="card-details">
       <p><strong>Requested By:</strong> {order.userId.name}</p>
       <p><strong>Due On:</strong> {order.planId.nextMaintenanceDate}</p>
       <p><strong>Maintenance for:</strong> {order.frequency} days</p>
       <p><strong>Issue:</strong> {order.desc}</p>
-      <p><strong>Time taken: </strong> {task.estHours} hrs</p>
-      <p><strong>Fixed issue:</strong> {task.descrip}</p>
+      <p><strong>Time taken: </strong> {task?.estHours} hrs</p>
+      <p><strong>Fixed issue:</strong> {task?.descrip}</p>
 
     </div>
   </div>
