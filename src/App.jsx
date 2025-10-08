@@ -92,13 +92,18 @@ function AuthProvider({ children }) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
   };
+
+  const updateUser = (updatedUserData) => {
+    setUser(updatedUserData);
+    localStorage.setItem('user', JSON.stringify(updatedUserData));
+  };
  
   const hasPermission = (permission) => {
     return user?.permissions?.includes(permission) || false;
   };
  
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, updateUser, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );
